@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE ARCHITECT | ARC Global</title>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        body { background-color: #050505; color: #d4af37; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 0; user-select: none; }
+        .logo { width: 100px; margin-top: 20px; border-radius: 50%; border: 2px solid #d4af37; box-shadow: 0 0 15px #d4af37; }
+        .container { padding: 15px; max-width: 550px; margin: auto; }
+        .card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; margin: 12px 0; border-left: 4px solid #d4af37; position: relative; }
+        .btn { background: #d4af37; color: black; padding: 10px; border: none; border-radius: 5px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 8px; font-size: 15px; }
+        select, input { background: #222; border: 1px solid #444; color: #fff; padding: 8px; width: 95%; margin-top: 8px; border-radius: 5px; }
+        
+        /* आपकी अपनी करेंसी का चिन्ह - ARC ($ Style) */
+        .arc-symbol { 
+            font-family: serif; 
+            font-weight: bold; 
+            color: #d4af37; 
+            position: relative; 
+            display: inline-block;
+        }
+        .arc-symbol::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #d4af37;
+            transform: translateX(-50%);
+        }
+
+        .balance-text { font-size: 28px; color: #fff; margin: 10px 0; }
+        #chart_container { height: 420px; border-radius: 10px; overflow: hidden; margin-top: 10px; border: 1px solid #333; }
+        .footer-shield { font-size: 10px; color: #444; margin: 30px 0; padding-bottom: 20px; line-height: 1.5; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div class="container">
+        <select id="lang-switch" onchange="switchLang()" style="width: auto; float: right; margin-bottom: 10px;">
+            <option value="en">Global (English)</option>
+            <option value="hi">India (हिन्दी)</option>
+            <option value="pa">Punjab (ਪੰਜਾਬੀ)</option>
+        </select>
+
+        <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006643.png" alt="Logo" class="logo">
+        <h1 id="app-title" style="letter-spacing: 4px;">THE ARCHITECT</h1>
+        <div id="welcome-msg" style="color:#fff; font-size: 18px;">Welcome, Strategic User</div>
+
+        <div class="card" style="border-left-color: #00ff00;">
+            <h3 id="wallet-title">Architect Assets</h3>
+            <div class="balance-text"><span class="arc-symbol">A</span> 0.00 <span style="font-size: 14px; color:#888;">ARC</span></div>
+            <p style="font-size: 11px; color: #d4af37;">Current Value: 1 <span class="arc-symbol" style="font-size:10px;">A</span> = ₹100.00</p>
+        </div>
+
+        <div class="card">
+            <h3 id="vip-title">VIP Activation & KYC</h3>
+            <input type="text" id="userName" placeholder="Enter Full Name for Identity" oninput="updateName()">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="showKYC()">Silver Plan (₹299)</button>
+                <button class="btn" style="background: gold;" onclick="showKYC()">Gold Elite (₹999)</button>
+            </div>
+            <div id="kyc-box" style="display:none; margin-top: 15px;">
+                <input type="file" accept="image/*">
+                <button class="btn" style="background: #00ff00;" onclick="alert('Documents Sent to The Architect.')">SUBMIT ID</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 id="market-title">Global Market Intelligence</h3>
+            <div style="margin-bottom: 10px;">
+                <select id="interval-select" onchange="updateChart()" style="width: auto;">
+                    <option value="1">1 Minute</option>
+                    <option value="5">5 Minutes</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="60">1 Hour</option>
+                    <option value="240">4 Hours</option>
+                    <option value="D">24 Hours (Daily)</option>
+                </select>
+            </div>
+            <div id="chart_container"></div>
+        </div>
+
+        <div class="card" style="border-left-color: #0088ff;">
+            <h3 id="reward-title">Professional Certification</h3>
+            <p style="font-size: 12px;">Get your 'Certified Architect' Badge now.</p>
+            <button class="btn" style="background: #0088ff; color: white;">VIEW CERTIFICATES</button>
+        </div>
+
+        <div class="footer-shield" id="legal-text">
+            LEGAL SHIELD: This is a skill-based mastermind game. Not financial advice. <br>
+            "जितना बड़ा नेटवर्क, उतना ज्यादा पैसा।" | SECURED BY THE ARCHITECT
+        </div>
+    </div>
+
+    <script>
+        function updateName() {
+            let name = document.getElementById('userName').value;
+            document.getElementById('welcome-msg').innerText = "Welcome, " + (name ? name : "Strategic User");
+        }
+        function showKYC() { document.getElementById('kyc-box').style.display = 'block'; }
+
+        // Language Logic
+        function switchLang() {
+            const lang = document.getElementById('lang-switch').value;
+            const t = {
+                en: { title: "THE ARCHITECT", wallet: "Architect Assets", market: "Market Intelligence", reward: "Professional Certification" },
+                hi: { title: "द आर्किटेक्ट", wallet: "आर्किटेक्ट संपत्ति", market: "मार्केट इंटेलिजेंस", reward: "प्रोफेशनल सर्टिफिकेशन" }
+            };
+            if(t[lang]) {
+                document.getElementById('app-title').innerText = t[lang].title;
+                document.getElementById('wallet-title').innerText = t[lang].wallet;
+                document.getElementById('market-title').innerText = t[lang].market;
+                document.getElementById('reward-title').innerText = t[lang].reward;
+            }
+        }
+
+        // Advanced TradingView Loader
+        function loadChart(interval) {
+            new TradingView.widget({
+                "container_id": "chart_container", "width": "100%", "height": "100%", 
+                "symbol": "BINANCE:BTCUSDT", "interval": interval, "theme": "dark", 
+                "style": "1", "locale": "en", "hide_top_toolbar": true
+            });
+        }
+        function updateChart() { loadChart(document.getElementById('interval-select').value); }
+        loadChart("1"); // Initial
+    </script>
+</body>
+</html>
