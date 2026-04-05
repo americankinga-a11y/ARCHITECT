@@ -3,156 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT | Ultimate Strategy Terminal</title>
+    <title>THE ARCHITECT | Binary Pro Terminal</title>
     <style>
-        :root { --gold: #d4af37; --black: #050505; --green: #26de81; --red: #ff4b5c; --blue: #0088ff; --grey: #1a1a1a; }
-        body { background: var(--black); color: white; font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; user-select: none; overflow-x: hidden; }
+        :root { --gold: #d4af37; --black: #090b0e; --green: #00c853; --red: #ff3d00; --blue: #2979ff; --dark-grey: #1c1f26; }
+        body { background: var(--black); color: white; font-family: 'Roboto', sans-serif; margin: 0; overflow: hidden; height: 100vh; user-select: none; }
         
-        /* High-End Header */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #111; border-bottom: 1px solid var(--gold); position: sticky; top: 0; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.8); }
-        .user-meta { text-align: left; }
-        .bal-pill { background: #000; border: 1.5px solid var(--gold); padding: 6px 16px; border-radius: 25px; font-weight: 800; font-size: 15px; box-shadow: inset 0 0 10px rgba(212,175,55,0.2); }
+        /* Top Navigation - Quotex Style */
+        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--dark-grey); border-bottom: 1px solid #2d333b; height: 55px; box-sizing: border-box; }
+        .bal-pill { background: rgba(212,175,55,0.1); border: 1px solid var(--gold); padding: 5px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+        .dep-btn { background: var(--green); color: white; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; font-size: 13px; }
 
-        /* The Revenue Engine (Ads) */
-        #ad-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 9999; text-align: center; justify-content: center; align-items: center; flex-direction: column; }
-        .ad-frame { background: var(--grey); border: 2px solid var(--gold); width: 85%; padding: 30px; border-radius: 20px; box-shadow: 0 0 40px var(--gold); }
-
-        /* Professional Chart Zone */
-        #chart-container { height: calc(100vh - 350px); width: 100%; background: #000; border-bottom: 2px solid #222; position: relative; }
-        .live-tag { position: absolute; top: 10px; left: 10px; background: rgba(255,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 10; animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        /* VIP & Subscription Cards */
-        .premium-card { background: linear-gradient(145deg, #1a1a1a, #000); border: 1px solid #333; border-radius: 15px; margin: 15px; padding: 20px; border-left: 5px solid var(--gold); position: relative; }
-        .vip-active-btn { background: linear-gradient(90deg, #d4af37, #b8860b); color: #000; border: none; padding: 14px; border-radius: 10px; font-weight: 900; width: 100%; margin-top: 15px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* Network & Referral Box */
-        .network-node { background: rgba(0, 136, 255, 0.05); border: 1px dashed var(--blue); padding: 15px; border-radius: 12px; margin: 15px; text-align: center; }
-        .ref-code { background: #000; padding: 10px; border-radius: 5px; color: var(--blue); font-family: monospace; margin: 10px 0; border: 1px solid #222; }
-
-        /* Trading Pad (Lower UI) */
-        .trade-pad { position: fixed; bottom: 0; width: 100%; background: #111; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; border-top: 1.5px solid #333; z-index: 1500; box-shadow: 0 -10px 30px rgba(0,0,0,0.9); }
-        .action-row { display: flex; gap: 15px; }
-        .t-btn { flex: 1; padding: 18px; border: none; border-radius: 12px; font-size: 20px; font-weight: 900; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
-        .t-btn:active { transform: scale(0.95); }
-        .up { background: var(--green); color: #050505; box-shadow: 0 4px 15px rgba(38, 222, 129, 0.4); }
-        .down { background: var(--red); color: #fff; box-shadow: 0 4px 15px rgba(255, 75, 92, 0.4); }
-
-        /* Document/KYC & Deposit Modals */
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; border: 2.5px solid var(--gold); padding: 30px; border-radius: 20px; z-index: 5000; width: 88%; max-width: 400px; text-align: center; }
-        .modal input[type="text"], .modal input[type="number"] { width: 90%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin: 10px 0; }
-        .modal input[type="file"] { margin: 15px 0; font-size: 12px; color: #888; }
+        /* Main Chart Area - Full Frame */
+        #chart-zone { height: calc(100vh - 240px); width: 100%; position: relative; background: var(--black); }
         
-        .download-btn { background: var(--blue); color: white; text-decoration: none; padding: 12px; border-radius: 8px; display: block; font-weight: bold; margin-top: 10px; }
+        /* Manual Indicators Toolset */
+        .side-tools { position: absolute; top: 20px; left: 15px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .tool-btn { background: var(--dark-grey); border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: 0.3s; }
+        .active-ind { border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1); }
+
+        /* Timer & Selection (1M, 2M, 5M) */
+        .time-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .t-chip { flex: 1; background: #252930; border: 1px solid #444; padding: 10px; border-radius: 5px; font-size: 12px; text-align: center; font-weight: bold; }
+        .selected-t { border-color: var(--blue); color: var(--blue); background: rgba(41, 121, 255, 0.1); }
+
+        /* Trading Pad - Bottom UI */
+        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--dark-grey); padding: 15px; border-top: 1px solid #2d333b; box-sizing: border-box; z-index: 2000; }
+        .asset-info { display:flex; justify-content:space-between; font-size:12px; color:#8b949e; margin-bottom:10px; }
+        
+        .action-row { display: flex; gap: 12px; }
+        .btn-main { flex: 1; padding: 18px; border: none; border-radius: 10px; font-size: 20px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+        .up { background: var(--green); box-shadow: 0 4px 0 #008a39; color: black; }
+        .down { background: var(--red); box-shadow: 0 4px 0 #ba2d00; color: white; }
+
+        /* ARC Vault Modal */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--dark-grey); border: 2px solid var(--gold); padding: 25px; border-radius: 15px; z-index: 5000; width: 88%; text-align: center; }
+        .modal img { background: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+        .modal input { width: 90%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div id="ad-overlay">
-    <div class="ad-frame">
-        <h2 style="color:var(--gold); margin-top:0;">ADS REVENUE NODE</h2>
-        <p style="font-size:13px;">Basic Account detected. To trade without ads and remove 15% Withdrawal Tax, Upgrade to VIP.</p>
-        <div style="height:120px; background:#000; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#444;">[Sponsor Video Loading...]</div>
-        <button onclick="closeAd()" style="background:var(--gold); border:none; padding:10px 30px; border-radius:5px; font-weight:bold; margin-top:20px;">SKIP AD</button>
+<div class="top-nav">
+    <div class="bal-pill"><span style="color:var(--gold)">LIVE</span> ₹0.00</div>
+    <button class="dep-btn" onclick="openM('vault')">DEPOSIT</button>
+</div>
+
+<div id="chart-zone">
+    <div class="side-tools">
+        <button class="tool-btn" id="zig-btn" onclick="toggleInd('zig-btn', 'ZIGZAG')">IND: ZIGZAG</button>
+        <button class="tool-btn" id="rsi-btn" onclick="toggleInd('rsi-btn', 'RSI')">IND: RSI</button>
+        <button class="tool-btn" id="all-btn" onclick="toggleInd('all-btn', 'ALLIGATOR')">IND: ALLIGATOR</button>
+        <button class="tool-btn" onclick="alert('Timeframe: 1 Minute')">1M</button>
     </div>
+    
+    <div id="tv_main_chart" style="height:100%;"></div>
 </div>
-
-<div class="header">
-    <div class="user-meta">
-        <div style="font-size:11px; color:var(--gold); font-weight:bold;">ARCHITECT NODE: ARC-7251</div>
-        <div style="font-size:10px; color:var(--blue);">STATUS: UNVERIFIED (KYC REQUIRED)</div>
-    </div>
-    <div class="bal-pill">₹0.00 <span style="color:var(--green); font-size:10px; margin-left:5px;">● LIVE</span></div>
-    <button style="background:var(--green); border:none; padding:8px 16px; border-radius:6px; font-weight:bold;" onclick="toggleM('deposit')">DEPOSIT</button>
-</div>
-
-<div id="chart-container">
-    <div class="live-tag">● LIVE MARKET</div>
-    <div id="tradingview_logic" style="height:100%;"></div>
-</div>
-
-<div class="premium-card">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:18px; font-weight:bold; color:var(--gold);">VIP ELITE PASS</span>
-        <span style="font-size:12px; color:#888;">₹999/MONTH</span>
-    </div>
-    <ul style="font-size:11px; padding-left:20px; color:#ccc; margin:10px 0;">
-        <li>0% Withdrawal Tax (Save ₹150 per ₹1000)</li>
-        <li>Unlimited Trading (No Ads Interruption)</li>
-        <li>Priority ARC Currency Verification</li>
-    </ul>
-    <button class="vip-active-btn" onclick="alert('Proceeding to ARC Secure Gateway for ₹999...')">Activate VIP Subscription</button>
-</div>
-
-<div class="network-node">
-    <div style="font-size:12px; color:var(--blue); font-weight:bold;">BUILD YOUR NETWORK (REF)</div>
-    <div class="ref-code">architect.io/auth/join?ref=725107</div>
-    <button style="width:100%; background:var(--blue); color:white; border:none; padding:10px; border-radius:8px; font-weight:bold;" onclick="alert('Referral Link Copied! Send to 5 people to earn 50 ARC.')">COPY INVITE LINK</button>
-</div>
-
-<div style="height:200px;"></div>
 
 <div class="trade-pad">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <button style="background:#222; color:var(--red); border:1.5px solid var(--red); padding:8px 12px; border-radius:8px; font-size:11px; font-weight:bold;" onclick="toggleM('kyc')">MANDATORY: UPLOAD DOCUMENTS</button>
-        <div style="text-align:right;">
-            <div style="font-size:10px; color:#888;">Investment: ₹100</div>
-            <div style="font-size:12px; color:var(--green); font-weight:bold;">Payout: 85%</div>
-        </div>
+    <div class="time-selector">
+        <div class="t-chip selected-t" onclick="selT(this)">1 MIN</div>
+        <div class="t-chip" onclick="selT(this)">2 MIN</div>
+        <div class="t-chip" onclick="selT(this)">5 MIN</div>
     </div>
+    
+    <div class="asset-info">
+        <span>BTC/USDT <span style="color:var(--gold)">85% Payout</span></span>
+        <span>Invest: ₹100</span>
+    </div>
+
     <div class="action-row">
-        <button class="t-btn up" onclick="execTrade('UP')">↑ CALL</button>
-        <button class="t-btn down" onclick="execTrade('DOWN')">↓ PUT</button>
+        <button class="btn-main up" onclick="execTrade('UP')">↑ Up</button>
+        <button class="btn-main down" onclick="execTrade('DOWN')">↓ Down</button>
     </div>
-    <a href="https://github.com/americankinga-a11y/ARCHITECT/archive/refs/heads/main.zip" class="download-btn" style="text-align:center; font-size:12px;">INSTALL ARCHITECT DESKTOP/APK</a>
 </div>
 
-<div id="kyc" class="modal">
-    <h3 style="color:var(--blue); margin-top:0;">LEGAL VERIFICATION</h3>
-    <p style="font-size:12px; color:#888;">As a registered company, we require ID proof to process payouts above ₹500.</p>
-    <div style="text-align:left; font-size:12px;">
-        <label>Aadhar Card (Front & Back):</label><br><input type="file"><br>
-        <label>Live Selfie with ID:</label><br><input type="file">
-    </div>
-    <button style="width:100%; background:var(--blue); color:white; padding:14px; margin-top:15px; border:none; border-radius:10px; font-weight:bold;" onclick="alert('Submission received. Payouts will remain locked during 72h audit.')">SUBMIT FOR AUDIT</button>
-    <p onclick="toggleM('kyc')" style="color:#444; font-size:12px; margin-top:15px; cursor:pointer;">Close</p>
-</div>
-
-<div id="deposit" class="modal">
-    <h3 style="color:var(--gold); margin-top:0;">THE ARC VAULT</h3>
-    <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="220" style="background:white; padding:12px; border-radius:15px; box-shadow:0 0 20px rgba(255,255,255,0.1);">
-    <p style="font-size:11px; color:#888; margin-top:10px;">Scan to sync assets. Minimum 5 deposits required to unlock Fast-Withdrawal.</p>
+<div id="vault" class="modal">
+    <h3 style="color:var(--gold); margin-top:0;">ARC DEPOSIT VAULT</h3>
+    <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="200">
+    <p style="font-size:11px; color:#8b949e;">Scan QR to sync assets. Verification takes 5-10 mins.</p>
     <input type="text" placeholder="Enter Transaction UTR">
-    <button style="width:100%; background:var(--gold); padding:14px; margin-top:10px; font-weight:bold; border:none; border-radius:10px;" onclick="alert('Syncing with Blockchain... Please wait.')">CONFIRM ASSETS</button>
-    <p onclick="toggleM('deposit')" style="color:#444; font-size:12px; margin-top:15px; cursor:pointer;">Close</p>
+    <button class="dep-btn" style="width:100%;" onclick="alert('Syncing with Blockchain... Please wait.')">CONFIRM ASSETS</button>
+    <p onclick="closeM('vault')" style="color:#555; font-size:12px; margin-top:15px; cursor:pointer;">Close Terminal</p>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
-    // Professional Chart Engine
+    // Professional Binary Chart Setup
     new TradingView.widget({
         "width": "100%", "height": "100%", "symbol": "BINANCE:BTCUSDT",
-        "interval": "1", "theme": "dark", "style": "1", "container_id": "tradingview_logic",
-        "hide_top_toolbar": true, "enable_publishing": false, "backgroundColor": "#050505"
+        "interval": "1", "theme": "dark", "style": "1", "container_id": "tv_main_chart",
+        "hide_top_toolbar": true, "backgroundColor": "#090b0e", "hide_legend": true,
+        "withdateranges": false, "save_image": false, "enable_publishing": false
     });
 
-    // Revenue Algorithm: Force Ads every 55 seconds for non-VIPs
-    let isVIP = false;
-    setInterval(() => {
-        if(!isVIP) document.getElementById('ad-overlay').style.display = 'flex';
-    }, 55000);
+    // Manual Indicator Toggle Logic
+    function toggleInd(btnId, name) {
+        const btn = document.getElementById(btnId);
+        btn.classList.toggle('active-ind');
+        if(btn.classList.contains('active-ind')) {
+            alert(name + " Indicator Applied to Live Feed.");
+        } else {
+            alert(name + " Indicator Removed.");
+        }
+    }
 
-    function closeAd() { document.getElementById('ad-overlay').style.display = 'none'; }
+    // Fixed Time Selection (1M, 2M, 5M)
+    function selT(el) {
+        document.querySelectorAll('.t-chip').forEach(c => c.classList.remove('selected-t'));
+        el.classList.add('selected-t');
+    }
 
-    // Majority-Killer Algorithm (Visual Trigger)
+    // Trade Execution Simulation
     function execTrade(dir) {
-        alert("Analyzing Network Nodes: Majority is on " + (dir === 'UP' ? 'DOWN' : 'UP') + ". Your order is Syncing...");
+        const duration = document.querySelector('.selected-t').innerText;
+        alert(`Order Placed: ${dir} | Duration: ${duration}\nAnalyzing market majority logic...`);
     }
 
-    function toggleM(id) {
-        const m = document.getElementById(id);
-        m.style.display = (m.style.display === 'block') ? 'none' : 'block';
-    }
+    // Modal Control
+    function openM(id) { document.getElementById(id).style.display = 'block'; }
+    function closeM(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 </body>
 </html>
