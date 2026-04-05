@@ -3,125 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT | Binary Pro Terminal</title>
+    <title>THE ARCHITECT | Alpha Master Engine</title>
     <style>
-        :root { --gold: #d4af37; --black: #090b0e; --green: #00c853; --red: #ff3d00; --blue: #2979ff; --dark-grey: #1c1f26; }
-        body { background: var(--black); color: white; font-family: 'Roboto', sans-serif; margin: 0; overflow: hidden; height: 100vh; user-select: none; }
+        :root { --gold: #d4af37; --black: #05070a; --green: #00e676; --red: #ff1744; --blue: #2979ff; --dark: #0f1217; --grey: #1e2229; }
+        body { background: var(--black); color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; height: 100vh; user-select: none; }
         
-        /* Top Navigation - Quotex Style */
-        .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--dark-grey); border-bottom: 1px solid #2d333b; height: 55px; box-sizing: border-box; }
-        .bal-pill { background: rgba(212,175,55,0.1); border: 1px solid var(--gold); padding: 5px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; }
-        .dep-btn { background: var(--green); color: white; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; font-size: 13px; }
-
-        /* Main Chart Area - Full Frame */
-        #chart-zone { height: calc(100vh - 240px); width: 100%; position: relative; background: var(--black); }
+        /* 1. ULTRA-PRO HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--dark); border-bottom: 2px solid var(--grey); height: 70px; }
+        .brand-logo { line-height: 1.2; }
+        .brand-logo b { font-size: 22px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(212,175,55,0.3); }
+        .node-tag { font-size: 8px; color: var(--red); font-weight: 900; animation: flash 1.5s infinite; }
         
-        /* Manual Indicators Toolset */
-        .side-tools { position: absolute; top: 20px; left: 15px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
-        .tool-btn { background: var(--dark-grey); border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: 0.3s; }
-        .active-ind { border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1); }
+        .acc-panel { background: #000; border: 1px solid #333; padding: 8px 15px; border-radius: 12px; cursor: pointer; min-width: 130px; text-align: center; }
+        .acc-label { font-size: 9px; color: var(--gold); font-weight: 800; text-transform: uppercase; }
+        .acc-bal { font-size: 18px; font-weight: 900; }
 
-        /* Timer & Selection (1M, 2M, 5M) */
-        .time-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .t-chip { flex: 1; background: #252930; border: 1px solid #444; padding: 10px; border-radius: 5px; font-size: 12px; text-align: center; font-weight: bold; }
-        .selected-t { border-color: var(--blue); color: var(--blue); background: rgba(41, 121, 255, 0.1); }
+        /* 2. FAST DEPOSIT ACTION */
+        .fast-dep { background: var(--green); color: black; border: none; padding: 12px 22px; border-radius: 8px; font-weight: 900; font-size: 14px; box-shadow: 0 0 20px rgba(0,230,118,0.4); cursor: pointer; }
 
-        /* Trading Pad - Bottom UI */
-        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--dark-grey); padding: 15px; border-top: 1px solid #2d333b; box-sizing: border-box; z-index: 2000; }
-        .asset-info { display:flex; justify-content:space-between; font-size:12px; color:#8b949e; margin-bottom:10px; }
-        
-        .action-row { display: flex; gap: 12px; }
-        .btn-main { flex: 1; padding: 18px; border: none; border-radius: 10px; font-size: 20px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .up { background: var(--green); box-shadow: 0 4px 0 #008a39; color: black; }
-        .down { background: var(--red); box-shadow: 0 4px 0 #ba2d00; color: white; }
+        /* 3. FULL-SCREEN CHART ENGINE */
+        #chart-zone { height: calc(100vh - 410px); width: 100%; position: relative; background: #000; }
+        .side-overlay { position: absolute; top: 15px; left: 12px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .t-btn { background: rgba(15, 18, 23, 0.95); border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-size: 10px; font-weight: bold; backdrop-filter: blur(10px); }
+        .t-active { border-color: var(--gold); color: var(--gold); }
 
-        /* ARC Vault Modal */
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--dark-grey); border: 2px solid var(--gold); padding: 25px; border-radius: 15px; z-index: 5000; width: 88%; text-align: center; }
-        .modal img { background: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
-        .modal input { width: 90%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 15px; }
+        /* 4. NETWORK & NO-LOSS STATUS */
+        .status-strip { background: rgba(41, 121, 255, 0.1); border-top: 1px solid var(--blue); border-bottom: 1px solid var(--blue); padding: 10px 15px; display: flex; justify-content: space-between; font-size: 10px; color: var(--blue); font-weight: bold; }
+
+        /* 5. VIP RECOVERY & REFERRAL */
+        .vip-box { background: linear-gradient(135deg, #161a21, #05070a); border: 1px solid var(--gold); margin: 10px 15px; padding: 18px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .vip-box i { color: var(--gold); font-size: 15px; display: block; margin-bottom: 8px; }
+        .vip-txt { font-size: 9px; color: #8a8d91; line-height: 1.5; }
+        .vip-trigger { background: var(--gold); color: black; border: none; width: 100%; padding: 14px; border-radius: 10px; font-weight: 900; margin-top: 15px; font-size: 13px; cursor: pointer; }
+
+        /* 6. PRO TRADING PAD (TIME & ENTRY) */
+        .command-deck { position: fixed; bottom: 0; width: 100%; background: var(--dark); padding: 25px; border-top: 2px solid var(--grey); box-sizing: border-box; z-index: 5000; }
+        .data-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .data-tile { flex: 1; background: #000; border: 1px solid #2d333b; border-radius: 12px; padding: 12px; text-align: center; }
+        .tile-head { font-size: 10px; color: #555; text-transform: uppercase; margin-bottom: 6px; font-weight: 900; }
+        .tile-body { font-size: 18px; font-weight: bold; }
+
+        .btn-group { display: flex; gap: 20px; }
+        .trade-btn { flex: 1; padding: 28px; border: none; border-radius: 20px; font-size: 30px; font-weight: 900; cursor: pointer; transition: 0.1s; }
+        .call { background: var(--green); box-shadow: 0 8px 0 #009e4f; color: black; }
+        .put { background: var(--red); box-shadow: 0 8px 0 #b31230; color: white; }
+        .trade-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* 7. THE QR VAULT (INSTANT POP-UP) */
+        .vault-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.99); z-index: 20000; justify-content: center; align-items: center; padding: 20px; }
+        .vault-card { background: var(--dark); border: 2px solid var(--gold); border-radius: 30px; width: 100%; max-width: 440px; padding: 40px; text-align: center; }
+        .qr-frame { background: #fff; padding: 20px; border-radius: 25px; display: inline-block; box-shadow: 0 0 40px rgba(212,175,55,0.4); margin-bottom: 20px; border: 5px solid #fff; }
+
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.1; } 100% { opacity: 1; } }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-<div class="top-nav">
-    <div class="bal-pill"><span style="color:var(--gold)">LIVE</span> ₹0.00</div>
-    <button class="dep-btn" onclick="openM('vault')">DEPOSIT</button>
+<div class="header">
+    <div class="brand-logo"><b>ARCHITECT</b><br><span class="node-tag">● NODE: ARC-V7 ULTIMATE</span></div>
+    <div class="acc-panel" onclick="switchMode()">
+        <div class="acc-label" id="m-label">Demo Account</div>
+        <div class="acc-bal" id="m-bal">₹10,000.00</div>
+    </div>
+    <button class="fast-dep" onclick="toggleV(true)">FAST DEPOSIT</button>
 </div>
 
 <div id="chart-zone">
-    <div class="side-tools">
-        <button class="tool-btn" id="zig-btn" onclick="toggleInd('zig-btn', 'ZIGZAG')">IND: ZIGZAG</button>
-        <button class="tool-btn" id="rsi-btn" onclick="toggleInd('rsi-btn', 'RSI')">IND: RSI</button>
-        <button class="tool-btn" id="all-btn" onclick="toggleInd('all-btn', 'ALLIGATOR')">IND: ALLIGATOR</button>
-        <button class="tool-btn" onclick="alert('Timeframe: 1 Minute')">1M</button>
+    <div class="side-overlay">
+        <button class="t-btn t-active" id="z-i" onclick="act('z-i','ZIGZAG')">INDICATOR: ZIGZAG</button>
+        <button class="t-btn" id="r-i" onclick="act('r-i','RSI-MASTER')">INDICATOR: RSI-PRO</button>
+        <button class="t-btn" onclick="alert('Full Screen Architecture Enabled')">⛶ FULL CHART</button>
     </div>
-    
-    <div id="tv_main_chart" style="height:100%;"></div>
+    <div id="tv_main_engine" style="height:100%;"></div>
 </div>
 
-<div class="trade-pad">
-    <div class="time-selector">
-        <div class="t-chip selected-t" onclick="selT(this)">1 MIN</div>
-        <div class="t-chip" onclick="selT(this)">2 MIN</div>
-        <div class="t-chip" onclick="selT(this)">5 MIN</div>
-    </div>
-    
-    <div class="asset-info">
-        <span>BTC/USDT <span style="color:var(--gold)">85% Payout</span></span>
-        <span>Invest: ₹100</span>
-    </div>
-
-    <div class="action-row">
-        <button class="btn-main up" onclick="execTrade('UP')">↑ Up</button>
-        <button class="btn-main down" onclick="execTrade('DOWN')">↓ Down</button>
-    </div>
+<div class="status-strip">
+    <div>SYSTEM: NO-LOSS LOGIC ENGAGED</div>
+    <div>REF_NODE: ARMAN_PRO_ALPHA</div>
 </div>
 
-<div id="vault" class="modal">
-    <h3 style="color:var(--gold); margin-top:0;">ARC DEPOSIT VAULT</h3>
-    <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="200">
-    <p style="font-size:11px; color:#8b949e;">Scan QR to sync assets. Verification takes 5-10 mins.</p>
-    <input type="text" placeholder="Enter Transaction UTR">
-    <button class="dep-btn" style="width:100%;" onclick="alert('Syncing with Blockchain... Please wait.')">CONFIRM ASSETS</button>
-    <p onclick="closeM('vault')" style="color:#555; font-size:12px; margin-top:15px; cursor:pointer;">Close Terminal</p>
+<div class="vip-box">
+    <i>✦ VIP RECOVERY ACCESS</i>
+    <div class="vip-txt">
+        • Instant Node Verification • 0% Deposit Latency • Unlimited ARC Signals<br>
+        • Full Withdrawal Unlocking for Network Marketing Leaders
+    </div>
+    <button class="vip-trigger" onclick="alert('Redirecting to High-Speed ARC Gateway...')">ACTIVATE VIP RECOVERY - ₹999</button>
+</div>
+
+<div class="command-deck">
+    <div class="data-row">
+        <div class="data-tile">
+            <div class="tile-head">Investment Amount</div>
+            <div class="tile-body">₹1,000</div>
+        </div>
+        <div class="data-tile" style="border-color: var(--blue);">
+            <div class="tile-head" style="color: var(--blue);">Entry Time</div>
+            <div class="tile-body">01:00 MIN</div>
+        </div>
+    </div>
+    
+    <div class="btn-group">
+        <button id="call-btn" class="trade-btn call" onclick="trade('CALL')">↑ CALL</button>
+        <button id="put-btn" class="trade-btn put" onclick="trade('PUT')">↓ PUT</button>
+    </div>
+    <p style="text-align:center; font-size:10px; color:#444; margin-top:20px; font-weight:bold; letter-spacing:1px;">REQUIRED: UPLOAD KYC DOCUMENTS FOR WITHDRAWAL</p>
+</div>
+
+<div id="vault-modal" class="vault-overlay">
+    <div class="vault-card">
+        <h2 style="color:var(--gold); margin-top:0; letter-spacing:2px; font-weight:900;">FAST DEPOSIT GATEWAY</h2>
+        <div class="qr-frame">
+            <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="220" style="display:block;">
+        </div>
+        <p style="font-size:13px; color:#888; margin-bottom:25px;">Link Node ARC-V7 to sync Live Assets.<br>Minimum Deposit: <b>₹500</b></p>
+        <input type="text" placeholder="Enter Transaction UTR" style="width:100%; padding:18px; background:#000; border:2px solid #333; color:white; border-radius:15px; margin-bottom:20px; box-sizing: border-box; font-size:16px; text-align:center;">
+        <button class="vip-trigger" style="background:var(--green); margin-top:0;" onclick="alert('UTR Submitted. Verifying with Node...')">VERIFY & SYNC BALANCE</button>
+        <p onclick="toggleV(false)" style="color:#555; margin-top:25px; font-size:12px; cursor:pointer; font-weight:bold;">Cancel Transaction</p>
+    </div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script>
-    // Professional Binary Chart Setup
+    // TradingView Engine Initialization
     new TradingView.widget({
         "width": "100%", "height": "100%", "symbol": "BINANCE:BTCUSDT",
-        "interval": "1", "theme": "dark", "style": "1", "container_id": "tv_main_chart",
-        "hide_top_toolbar": true, "backgroundColor": "#090b0e", "hide_legend": true,
-        "withdateranges": false, "save_image": false, "enable_publishing": false
+        "interval": "1", "theme": "dark", "style": "1", "container_id": "tv_main_engine",
+        "hide_top_toolbar": true, "backgroundColor": "#05070a", "hide_legend": true,
+        "save_image": false, "enable_publishing": false
     });
 
-    // Manual Indicator Toggle Logic
-    function toggleInd(btnId, name) {
-        const btn = document.getElementById(btnId);
-        btn.classList.toggle('active-ind');
-        if(btn.classList.contains('active-ind')) {
-            alert(name + " Indicator Applied to Live Feed.");
-        } else {
-            alert(name + " Indicator Removed.");
-        }
+    // Master Account Logic
+    let isDemo = true;
+    function switchMode() {
+        isDemo = !isDemo;
+        document.getElementById('m-label').innerText = isDemo ? "Demo Account" : "Real Account";
+        document.getElementById('m-bal').innerText = isDemo ? "₹10,000.00" : "₹0.00";
+        document.getElementById('m-bal').style.color = isDemo ? "#fff" : "#ff1744";
     }
 
-    // Fixed Time Selection (1M, 2M, 5M)
-    function selT(el) {
-        document.querySelectorAll('.t-chip').forEach(c => c.classList.remove('selected-t'));
-        el.classList.add('selected-t');
+    // No-Loss Algorithm Execution
+    function trade(dir) {
+        const btn = dir === 'CALL' ? document.getElementById('call-btn') : document.getElementById('put-btn');
+        const txt = btn.innerText;
+        btn.innerText = "WAIT...";
+        
+        setTimeout(() => {
+            alert(`[ARC-V7] Order: ${dir}\nAlgorithm Status: NO-LOSS PROTOCOL ENGAGED\nResult: Processing Network Sentiment...`);
+            btn.innerText = txt;
+        }, 1400);
     }
 
-    // Trade Execution Simulation
-    function execTrade(dir) {
-        const duration = document.querySelector('.selected-t').innerText;
-        alert(`Order Placed: ${dir} | Duration: ${duration}\nAnalyzing market majority logic...`);
-    }
-
-    // Modal Control
-    function openM(id) { document.getElementById(id).style.display = 'block'; }
-    function closeM(id) { document.getElementById(id).style.display = 'none'; }
+    function act(id, n) { document.getElementById(id).classList.toggle('t-active'); }
+    function toggleV(s) { document.getElementById('vault-modal').style.display = s ? 'flex' : 'none'; }
 </script>
 </body>
 </html>
