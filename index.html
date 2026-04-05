@@ -3,160 +3,442 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT V10 | MASTER NODE</title>
+    <title>THE ARCHITECT V15 | STEALTH NODE</title>
+    
     <style>
-        :root { --gold: #d4af37; --bg: #06080a; --green: #00e676; --red: #ff1744; --panel: rgba(18, 21, 26, 0.98); }
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
+        :root {
+            --gold: #d4af37;
+            --bg: #05070a;
+            --green: #00e676;
+            --red: #ff1744;
+            --panel: #0e1116;
+            --border: #222;
+        }
 
-        /* 1. FULL SCREEN CHART ENGINE */
-        #chart-main { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: var(--bg);
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .master-ui { position: relative; z-index: 10; pointer-events: none; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        /* TOP NAVIGATION */
-        .top-nav { pointer-events: auto; display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(0,0,0,0.85); border-bottom: 1px solid #333; backdrop-filter: blur(10px); }
-        .acc-panel { border-left: 4px solid var(--gold); padding: 5px 15px; cursor: pointer; background: rgba(255,255,255,0.03); border-radius: 4px; }
-        .bal-val { font-size: 19px; font-weight: 900; letter-spacing: 1px; }
+        /* TOP NAVIGATION ENGINE */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            height: 65px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 500;
+        }
 
-        /* SIDE TRADING PANEL (QUOTEX STYLE) */
-        .side-panel { position: absolute; right: 10px; top: 80px; width: 155px; pointer-events: auto; background: var(--panel); padding: 18px; border-radius: 15px; border: 1px solid #444; box-shadow: 0 15px 40px rgba(0,0,0,0.9); }
-        .label { font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; }
-        .box-wrap { background: #000; border-radius: 8px; padding: 10px; margin-bottom: 15px; border: 1px solid #333; text-align: center; }
-        
-        input, select { background: transparent; border: none; color: white; font-size: 16px; font-weight: bold; width: 100%; text-align: center; outline: none; }
-        
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 12px; font-size: 26px; font-weight: 900; cursor: pointer; margin-bottom: 10px; transition: 0.1s; transform: translateZ(0); }
-        .up-trade { background: var(--green); color: black; box-shadow: 0 5px 0 #009e4f; }
-        .down-trade { background: var(--red); color: white; box-shadow: 0 5px 0 #b31230; }
-        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .acc-info {
+            border-left: 4px solid var(--gold);
+            padding: 2px 12px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.02);
+            border-radius: 4px;
+        }
 
-        /* DEPOSIT MODAL */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 1000; justify-content: center; align-items: center; pointer-events: auto; }
-        .modal-card { background: #12151a; border: 2px solid var(--gold); padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; text-align: center; }
-        .qr-frame { background: white; padding: 10px; display: inline-block; border-radius: 12px; margin: 20px 0; border: 4px solid var(--gold); }
-        .verify-btn { width: 100%; padding: 16px; background: var(--green); border: none; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; }
+        .bal-title {
+            font-size: 10px;
+            color: var(--gold);
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .bal-amount {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+
+        .dep-btn {
+            background: var(--green);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            color: black;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+            transition: 0.2s;
+        }
+
+        .dep-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* CHART CORE CONTAINER */
+        #chart-viewport {
+            height: calc(100vh - 240px);
+            width: 100%;
+            position: relative;
+            background: #000;
+            z-index: 10;
+        }
+
+        /* TRADING PANEL CONTROL PAD */
+        .footer-pad {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--panel);
+            padding: 15px 20px 30px;
+            border-top: 2px solid var(--border);
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .config-tile {
+            flex: 1;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .config-tile span {
+            display: block;
+            font-size: 9px;
+            color: #666;
+            font-weight: 900;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .config-tile b {
+            font-size: 17px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-trade {
+            flex: 1;
+            padding: 22px;
+            border: none;
+            border-radius: 15px;
+            font-size: 32px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-up {
+            background: var(--green);
+            color: #000;
+            box-shadow: 0 6px 0 #008a46;
+        }
+
+        .btn-down {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 6px 0 #a3002b;
+        }
+
+        .btn-trade:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        /* 2. RESULT MODAL SYSTEM */
+        .overlay-result {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.96);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-card {
+            background: var(--panel);
+            border: 2px solid var(--gold);
+            padding: 45px 30px;
+            border-radius: 25px;
+            text-align: center;
+            width: 85%;
+            max-width: 340px;
+            box-shadow: 0 20px 50px rgba(0,0,0,1);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .result-card h2 {
+            font-size: 14px;
+            margin: 0;
+            color: #888;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .result-card .amount-display {
+            font-size: 60px;
+            font-weight: 900;
+            margin: 25px 0;
+            letter-spacing: -2px;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px 40px;
+            border-radius: 10px;
+            margin-top: 30px;
+            cursor: pointer;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        /* 3. DEPOSIT TERMINAL */
+        .modal-vault {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.98);
+            z-index: 9000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .vault-container {
+            background: #12151a;
+            border: 2px solid var(--gold);
+            padding: 40px 25px;
+            border-radius: 30px;
+            text-align: center;
+            width: 90%;
+            max-width: 420px;
+        }
+
+        .qr-wrapper {
+            background: white;
+            padding: 12px;
+            border-radius: 18px;
+            display: inline-block;
+            margin: 25px 0;
+            border: 5px solid var(--gold);
+        }
+
+        .utr-field {
+            width: 100%;
+            padding: 20px;
+            background: #000;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 900;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .sync-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--green);
+            border: none;
+            border-radius: 15px;
+            font-weight: 900;
+            font-size: 18px;
+            cursor: pointer;
+            color: black;
+        }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-<div id="chart-main">
-    <div id="tv_engine_v10" style="height:100%;"></div>
-</div>
-
-<div class="master-ui">
-    <div class="top-nav">
-        <div class="acc-panel" onclick="switchAccount()">
-            <div id="acc-type" style="font-size: 10px; color: var(--gold); font-weight: bold;">DEMO ACCOUNT</div>
-            <div id="balance-display" class="bal-val">₹10,000.00</div>
+    <header class="header">
+        <div class="acc-info" id="acc-switcher" onclick="toggleAccount()">
+            <div class="bal-title" id="acc-label">Demo Account</div>
+            <div class="bal-amount" id="current-bal">₹10,000.00</div>
         </div>
-        <button onclick="showVault(true)" style="background:var(--green); border:none; padding:12px 25px; border-radius:8px; font-weight:900; cursor:pointer; color:black;">DEPOSIT</button>
+        <button class="dep-btn" onclick="openVault(true)">DEPOSIT</button>
+    </header>
+
+    <main id="chart-viewport">
+        <div id="architect-engine" style="height:100%;"></div>
+    </main>
+
+    <footer class="footer-pad">
+        <div class="config-row">
+            <div class="config-tile">
+                <span>Investment</span>
+                <b>₹1,000</b>
+            </div>
+            <div class="config-tile">
+                <span>Duration</span>
+                <b>01:00 MIN</b>
+            </div>
+        </div>
+        <div class="action-row">
+            <button class="btn-trade btn-up" onclick="startTrade('UP')">↑</button>
+            <button class="btn-trade btn-down" onclick="startTrade('DOWN')">↓</button>
+        </div>
+    </footer>
+
+    <div class="overlay-result" id="result-screen">
+        <div class="result-card">
+            <h2 id="status-label">TRADE EXPIRED</h2>
+            <div class="amount-display" id="profit-display">₹0.00</div>
+            <p style="font-size:12px; color:#555; font-weight:bold; letter-spacing: 1px;">ARC NODE: VOLATILITY PROTECTION ACTIVE</p>
+            <button class="close-btn" onclick="hideResult()">Close Terminal</button>
+        </div>
     </div>
 
-    <div class="side-panel">
-        <div class="label">Investment (₹)</div>
-        <div class="box-wrap"><input type="number" id="trade-amt" value="1000" min="100" max="300000"></div>
-        
-        <div class="label">Timeframe</div>
-        <div class="box-wrap">
-            <select id="trade-time">
-                <option value="5">5 SEC</option>
-                <option value="60" selected>1 MIN</option>
-                <option value="300">5 MIN</option>
-                <option value="3600">1 HOUR</option>
-                <option value="86400">1 DAY</option>
-            </select>
+    <div class="modal-vault" id="vault-screen">
+        <div class="vault-container">
+            <h3 style="color:var(--gold); margin:0; letter-spacing: 2px;">SECURE ARC DEPOSIT</h3>
+            <div class="qr-wrapper">
+                <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="220" alt="Payment QR">
+            </div>
+            <input type="text" id="utr-code" class="utr-field" placeholder="12-DIGIT UTR">
+            <button class="sync-btn" onclick="syncAssets()">SYNC BLOCKCHAIN ASSETS</button>
+            <p onclick="openVault(false)" style="margin-top:30px; color:#444; cursor:pointer; font-size:14px; font-weight:bold;">DISCONNECT NODE</p>
         </div>
-
-        <button class="btn up-trade" onclick="placeOrder('UP')">↑</button>
-        <button class="btn down-trade" onclick="placeOrder('DOWN')">↓</button>
-        
-        <div style="font-size: 9px; color: #444; text-align: center; margin-top: 10px; font-weight: bold;">ARC-V10 ULTIMATE NODE</div>
     </div>
-</div>
 
-<div id="vault-modal" class="modal">
-    <div class="modal-card">
-        <h2 style="color:var(--gold); margin:0; letter-spacing: 1px;">FAST ARC SYNC</h2>
-        <div class="qr-frame">
-            <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="200">
-        </div>
-        <p style="font-size:12px; color:#aaa; margin-bottom: 20px;">Enter 12-Digit UTR for Instant Fund Sync.</p>
-        <input type="text" id="utr-input" placeholder="UTR Number" style="background:#000; border:1px solid #333; padding:15px; border-radius:10px; margin-bottom:20px; color:white; font-size: 18px;">
-        <button class="verify-btn" onclick="processDeposit()">VERIFY & SYNC</button>
-        <div style="color:red; font-size:11px; margin-top:20px; font-weight:900;">SECURITY ALERT: KYC REQUIRED FOR WITHDRAWAL</div>
-        <p onclick="showVault(false)" style="cursor:pointer; font-size:13px; margin-top:25px; color:#555; font-weight:bold;">Return to Terminal</p>
-    </div>
-</div>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        // 1. TRADINGVIEW MASTER CONFIG (NO VOLUME / BINARY STYLE)
+        const widget = new TradingView.widget({
+            "autosize": true,
+            "symbol": "BITSTAMP:BTCUSD",
+            "interval": "1",
+            "theme": "dark",
+            "style": "1",
+            "container_id": "architect-engine",
+            "hide_top_toolbar": true,
+            "hide_legend": true,
+            "backgroundColor": "#05070a",
+            "save_image": false,
+            "details": false,
+            "hotlist": false,
+            "calendar": false,
+            "studies": [], // यह लाइन वॉल्यूम हटाती है
+            "disabled_features": ["header_widget_dom_node", "volume_force_overlay"]
+        });
 
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-    // 1. ट्रेडिंग चार्ट सेटअप
-    new TradingView.widget({
-        "autosize": true, "symbol": "BINANCE:BTCUSDT", "interval": "1",
-        "theme": "dark", "style": "1", "container_id": "tv_engine_v10",
-        "hide_top_toolbar": true, "hide_legend": true, "backgroundColor": "#06080a",
-        "save_image": false
-    });
+        // 2. STATE MANAGEMENT
+        let demoBalance = 10000;
+        let realBalance = 0;
+        let activeDemo = true;
 
-    let demoBalance = 10000;
-    let realBalance = 0;
-    let isDemoAccount = true;
-
-    function showVault(visible) { document.getElementById('vault-modal').style.display = visible ? 'flex' : 'none'; }
-
-    function switchAccount() {
-        isDemoAccount = !isDemoAccount;
-        document.getElementById('acc-type').innerText = isDemoAccount ? "DEMO ACCOUNT" : "REAL ACCOUNT (ARC)";
-        document.getElementById('balance-display').style.color = isDemoAccount ? "white" : "#00e676";
-        updateDisplay();
-    }
-
-    function processDeposit() {
-        let utr = document.getElementById('utr-input').value;
-        if(utr.length < 10) { alert("Invalid Transaction ID."); return; }
-        
-        alert("Connecting to ARC-V10 Mainframe...");
-        setTimeout(() => {
-            realBalance += 50000; // सिमुलेशन के लिए 50k ऐड
-            if(isDemoAccount) switchAccount(); 
-            updateDisplay();
-            showVault(false);
-            alert("DEPOSIT SUCCESS: ₹50,000 Synced to Real Vault.");
-        }, 2000);
-    }
-
-    function placeOrder(direction) {
-        let amount = parseInt(document.getElementById('trade-amt').value);
-        let currentPool = isDemoAccount ? demoBalance : realBalance;
-
-        // लिमिट चेक (₹100 - ₹3,00,000)
-        if(amount < 100 || amount > 300000) { alert("Trading Limit: ₹100 to ₹3,00,000"); return; }
-        if(currentPool < amount) { alert("Insufficient Balance in Vault."); return; }
-
-        // बैलेंस काटना
-        if(isDemoAccount) demoBalance -= amount; else realBalance -= amount;
-        updateDisplay();
-
-        alert(`[ARC-V10] ${direction} ORDER PLACED\nAnalyzing Market Vectors...`);
-
-        // --- 99% HOUSE ALWAYS WINS LOGIC (THE ARCHITECT CORE) ---
-        setTimeout(() => {
-            const result = Math.random() < 0.99; // 99% चांस यूजर का लॉस
-            if(!result) {
-                let profit = amount * 1.87;
-                if(isDemoAccount) demoBalance += profit; else realBalance += profit;
-                alert("CRITICAL WIN! Profit: ₹" + profit.toFixed(0));
+        // UI SYNC
+        function updateUI() {
+            const display = document.getElementById('current-bal');
+            const label = document.getElementById('acc-label');
+            
+            if(activeDemo) {
+                display.innerText = "₹" + demoBalance.toLocaleString() + ".00";
+                display.style.color = "white";
+                label.innerText = "Demo Account";
             } else {
-                alert("ORDER EXPIRED: Market Manipulation Detected. (Loss)");
+                display.innerText = "₹" + realBalance.toLocaleString() + ".00";
+                display.style.color = "var(--green)";
+                label.innerText = "Real Account (ARC)";
             }
-            updateDisplay();
-        }, 2500);
-    }
+        }
 
-    function updateDisplay() {
-        let val = isDemoAccount ? demoBalance : realBalance;
-        document.getElementById('balance-display').innerText = "₹" + val.toLocaleString() + ".00";
-    }
-</script>
+        // ACCOUNT TOGGLE
+        function toggleAccount() {
+            activeDemo = !activeDemo;
+            updateUI();
+        }
+
+        // MODAL CONTROLS
+        function openVault(state) { document.getElementById('vault-screen').style.display = state ? 'flex' : 'none'; }
+        function hideResult() { document.getElementById('result-screen').style.display = 'none'; }
+
+        // ASSET SYNC LOGIC
+        function syncAssets() {
+            const utr = document.getElementById('utr-code').value;
+            if(utr.length < 10) { alert("ERROR: INVALID TRANSACTION HASH."); return; }
+            
+            alert("ARC NODE: VERIFYING BLOCKCHAIN CONFIRMATIONS...");
+            setTimeout(() => {
+                realBalance += 50000;
+                if(activeDemo) toggleAccount();
+                updateUI();
+                openVault(false);
+                alert("SUCCESS: ₹50,000 SYNCED TO REAL VAULT.");
+            }, 2500);
+        }
+
+        // 3. THE "99% HOUSE WIN" TRADING ENGINE
+        function startTrade(type) {
+            let pool = activeDemo ? demoBalance : realBalance;
+            if(pool < 1000) { alert("INSUFFICIENT ASSETS."); return; }
+
+            // Deduct Funds
+            if(activeDemo) demoBalance -= 1000; else realBalance -= 1000;
+            updateUI();
+
+            console.log(`[ARC-V15] Order Placed: ${type}`);
+
+            // ALGORITHM TIMEOUT (2 SECONDS)
+            setTimeout(() => {
+                const isWinner = Math.random() < 0.01; // 99% LOSS LOGIC
+                const screen = document.getElementById('result-screen');
+                const amtTxt = document.getElementById('profit-display');
+                const statTxt = document.getElementById('status-label');
+
+                if(isWinner) {
+                    let win = 1875;
+                    if(activeDemo) demoBalance += win; else realBalance += win;
+                    amtTxt.innerText = "₹" + win;
+                    amtTxt.style.color = "var(--green)";
+                    statTxt.innerText = "PROFIT";
+                } else {
+                    amtTxt.innerText = "₹0.00";
+                    amtTxt.style.color = "var(--red)";
+                    statTxt.innerText = "TRADE EXPIRED";
+                }
+                
+                screen.style.display = 'flex';
+                updateUI();
+            }, 2000);
+        }
+    </script>
 </body>
-</html>
+    </html>
+    
