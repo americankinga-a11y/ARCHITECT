@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram 2.0 - Super Fast</title>
+    <style>
+        /* CSS: Design & Feel */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #fafafa; padding-bottom: 60px; color: #262626; }
+
+        /* Top Navigation */
+        .navbar-top {
+            position: sticky; top: 0; background: #fff; height: 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 15px; border-bottom: 1px solid #dbdbdb; z-index: 1000;
+        }
+        .logo-text { font-size: 24px; font-weight: bold; font-family: 'Billabong', cursive; }
+        .top-icons { display: flex; gap: 20px; font-size: 22px; cursor: pointer; }
+
+        /* Stories */
+        .stories {
+            display: flex; padding: 10px; overflow-x: auto;
+            background: #fff; border-bottom: 1px solid #dbdbdb; gap: 12px;
+        }
+        .story-circle {
+            min-width: 65px; height: 65px; border-radius: 50%;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            padding: 2px; display: flex; align-items: center; justify-content: center;
+        }
+        .story-inner { width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 2px solid #fff; overflow: hidden; }
+        .story-inner img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Post Feed */
+        .feed { max-width: 600px; margin: 0 auto; }
+        .post-card { background: #fff; margin-bottom: 15px; border-bottom: 1px solid #dbdbdb; }
+        .post-header { padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #eee; }
+        .username { font-weight: 600; font-size: 14px; }
+        
+        /* Follow/Unfollow Button */
+        .follow-btn { 
+            color: #0095f6; font-weight: 600; font-size: 14px; cursor: pointer; border: none; background: none; 
+        }
+        .following { color: #262626; }
+
+        .post-image { width: 100%; min-height: 300px; background: #efefef; }
+        .post-image img { width: 100%; height: auto; display: block; }
+
+        .post-actions { padding: 10px 15px; display: flex; gap: 15px; font-size: 24px; }
+        .like-btn { cursor: pointer; transition: 0.2s; }
+        .likes-count { padding: 0 15px 5px; font-weight: 600; font-size: 14px; }
+        .caption { padding: 0 15px 10px; font-size: 14px; }
+
+        /* Bottom Navigation */
+        .navbar-bottom {
+            position: fixed; bottom: 0; width: 100%; height: 50px;
+            background: #fff; border-top: 1px solid #dbdbdb;
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+        }
+        .nav-icon { font-size: 26px; cursor: pointer; text-decoration: none; color: #000; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar-top">
+        <div class="logo-text">Instagram</div>
+        <div class="top-icons">
+            <span>❤️</span>
+            <span>📩</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="stories">
+            <div class="story-circle"><div class="story-inner"></div></div>
+            <div class="story-circle"><div class="story-inner"></div></div>
+            <div class="story-circle"><div class="story-inner"></div></div>
+            <div class="story-circle"><div class="story-inner"></div></div>
+            <div class="story-circle"><div class="story-inner"></div></div>
+        </div>
+
+        <div class="feed">
+            <article class="post-card">
+                <div class="post-header">
+                    <div class="user-info">
+                        <div class="user-avatar"></div>
+                        <span class="username">Armaan_Strategist</span>
+                    </div>
+                    <button class="follow-btn" onclick="toggleFollow(this)">Follow</button>
+                </div>
+                <div class="post-image">
+                    <img src="https://via.placeholder.com/600x400" alt="Viral Content">
+                </div>
+                <div class="post-actions">
+                    <span class="like-btn" onclick="toggleLike(this)">🤍</span>
+                    <span>💬</span>
+                    <span>🚀</span>
+                </div>
+                <div class="likes-count">4,520 likes</div>
+                <div class="caption"><b>Armaan_Strategist</b> Duniya ka No. 1 App launch hone wala hai! 🚀</div>
+            </article>
+
+            <article class="post-card">
+                <div class="post-header">
+                    <div class="user-info">
+                        <div class="user-avatar"></div>
+                        <span class="username">Super_Fast_User</span>
+                    </div>
+                    <button class="follow-btn" onclick="toggleFollow(this)">Follow</button>
+                </div>
+                <div class="post-image">
+                    <img src="https://via.placeholder.com/600x600" alt="Another Post">
+                </div>
+                <div class="post-actions">
+                    <span class="like-btn" onclick="toggleLike(this)">🤍</span>
+                    <span>💬</span>
+                    <span>🚀</span>
+                </div>
+                <div class="likes-count">10.2k likes</div>
+                <div class="caption"><b>Super_Fast_User</b> Zero buffering, high speed! #Viral</div>
+            </article>
+        </div>
+    </main>
+
+    <nav class="navbar-bottom">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-icon">🔍</div>
+        <div class="nav-icon">🎬</div>
+        <div class="nav-icon">👤</div>
+    </nav>
+
+    <script>
+        // Double Tap / Like Logic
+        function toggleLike(element) {
+            if (element.innerText === "🤍") {
+                element.innerText = "❤️";
+                element.style.color = "red";
+            } else {
+                element.innerText = "🤍";
+                element.style.color = "black";
+            }
+        }
+
+        // Follow / Unfollow Logic
+        function toggleFollow(btn) {
+            if (btn.innerText === "Follow") {
+                btn.innerText = "Following";
+                btn.classList.add("following");
+            } else {
+                btn.innerText = "Follow";
+                btn.classList.remove("following");
+            }
+        }
+
+        // Quick Algorithm for Virality (Simulation)
+        console.log("Viral Algorithm Initialized: Ready to boost new users!");
+    </script>
+
+</body>
+          </html>
+          
