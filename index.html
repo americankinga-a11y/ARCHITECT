@@ -3,162 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT - LIVE INDIA</title>
+    <title>THE ARCHITECT PRO</title>
     
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/json;base64,ewogICAgIm5hbWUiOiAiVEhFIEFSQ0hJVEVDVCIsCiAgICAic2hvcnRfbmFtZSI6ICJBcmNoaXRlY3QiLAogICAgInN0YXJ0X3VybCI6ICIuIiwKICAgICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICAgImJhY2tncm91bmRfY29sb3IiOiAiIzA1MDcwYSIsCiAgICAidGhlbWVfY29sb3IiOiAiIzA1MDcwYSIKfQ==">
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
-        :root { --gold: #d4af37; --bg: #05070a; --green: #00e676; --red: #ff1744; --panel: #0e1116; }
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+        :root { --gold: #d4af37; --bg: #0b0e11; --green: #00c853; --red: #ff3d00; --panel: #151921; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; }
 
-        /* हेडर */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--panel); border-bottom: 1px solid #1a1a1a; height: 60px; position: fixed; top: 0; width: 100%; z-index: 100; box-sizing: border-box; }
-        .logo-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        #main-logo { height: 35px; border: 1px solid var(--gold); border-radius: 4px; }
-        .acc-info { border-left: 2px solid var(--gold); padding-left: 10px; }
+        /* प्रोफेशनल हेडर */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--panel); height: 50px; border-bottom: 1px solid #2a2e39; }
+        .balance-section { display: flex; align-items: center; gap: 10px; }
+        .bal-box { background: #1e222d; padding: 5px 12px; border-radius: 4px; border: 1px solid #363c4e; }
+        .bal-val { font-weight: 900; color: var(--gold); font-size: 16px; }
 
-        .head-btns { display: flex; gap: 8px; }
-        .h-btn { border: none; padding: 7px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 10px; font-family: 'Inter'; transition: 0.1s; }
-        .dep-btn { background: var(--green); color: #000; }
-        .wd-btn { background: #1a1d23; color: white; border: 1px solid #333; }
+        /* साइड नेविगेशन */
+        .sidebar { position: fixed; left: 0; top: 50px; bottom: 0; width: 45px; background: var(--panel); display: flex; flex-direction: column; align-items: center; gap: 20px; padding-top: 20px; border-right: 1px solid #2a2e39; z-index: 10; }
+        .side-icon { color: #5d6670; font-size: 18px; cursor: pointer; }
 
-        /* चार्ट */
-        #chart-container { width: 100%; height: calc(100vh - 230px); margin-top: 60px; background: var(--bg); position: relative; }
+        /* मेन चार्ट एरिया */
+        #chart-container { width: calc(100% - 45px); height: calc(100vh - 200px); margin-left: 45px; margin-top: 0; background: var(--bg); }
 
-        /* ट्रेड कंट्रोल्स */
-        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 15px; border-top: 1px solid #222; z-index: 100; box-sizing: border-box; border-radius: 20px 20px 0 0; }
-        .grid-inputs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .box { flex: 1; background: #000; border-radius: 10px; border: 1px solid #222; padding: 10px; text-align: center; }
-        .box span { font-size: 10px; color: #777; display: block; margin-bottom: 3px; }
-        .box b { font-size: 14px; }
+        /* ट्रेडिंग पैनल */
+        .trade-controls { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid #2a2e39; }
+        .input-group { background: #1e222d; border-radius: 8px; padding: 8px; border: 1px solid #363c4e; }
+        .input-label { font-size: 10px; color: #707a8a; display: block; }
+        .input-val { font-size: 14px; font-weight: bold; }
 
-        .btn-row { display: flex; gap: 15px; }
-        .m-btn { flex: 1; padding: 18px; border: none; border-radius: 12px; font-size: 30px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .m-btn:active { transform: scale(0.92); }
-        .up { background: var(--green); color: #000; }
+        .btn-trade { height: 60px; border: none; border-radius: 8px; font-size: 24px; font-weight: 900; color: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .up { background: var(--green); }
         .down { background: var(--red); color: #fff; }
 
         /* मॉडल्स */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .modal.open { display: flex; }
-        .card { background: var(--panel); border: 1px solid var(--gold); padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; position: relative; }
-        .close-icon { position: absolute; top: 15px; right: 20px; font-size: 20px; color: #555; cursor: pointer; }
-
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
-        .action-btn { width: 100%; background: var(--gold); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-card { background: var(--panel); border: 1px solid var(--gold); padding: 20px; border-radius: 12px; width: 85%; max-width: 300px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="logo-box" onclick="location.reload()">
-        <img src="https://i.ibb.co/Xz95p6F/logo.png" id="main-logo" alt="ARCHITECT">
-        <div class="acc-info">
-            <div style="font-size: 8px; color: var(--gold); font-weight: 900;">LIVE INR MARKET</div>
-            <div id="acc-bal" style="font-size: 18px; font-weight: 900;">₹10,000.00</div>
-        </div>
+    <div style="color: var(--gold); font-weight: 900; font-size: 18px;">L</div>
+    <div class="balance-section">
+        <div class="bal-box"><span class="input-label">LIVE ACCOUNT</span><span id="acc-bal" class="bal-val">₹10,480.00</span></div>
+        <button onclick="openModal('dep-modal')" style="background:var(--green); border:none; padding:8px 12px; border-radius:4px; font-weight:bold; font-size:12px;">DEPOSIT</button>
     </div>
-    <div class="head-btns">
-        <button class="h-btn dep-btn" onclick="openModal('dep-modal')">DEPOSIT</button>
-        <button class="h-btn wd-btn" onclick="openModal('wd-modal')">WITHDRAW</button>
-    </div>
+</div>
+
+<div class="sidebar">
+    <div class="side-icon">☰</div>
+    <div class="side-icon">🕒</div>
+    <div class="side-icon">⚙️</div>
 </div>
 
 <div id="chart-container"></div>
 
-<div class="trade-pad">
-    <div class="grid-inputs">
-        <div class="box"><span>INVEST</span><b>₹1,000</b></div>
-        <div class="box"><span>PAYOUT</span><b style="color:var(--green)">88%</b></div>
-        <div class="box"><span>TIME</span><b>01:00</b></div>
+<div class="trade-controls">
+    <div class="input-group">
+        <span class="input-label">INVESTMENT</span>
+        <span class="input-val">₹1,000</span>
     </div>
-    <div class="btn-row">
-        <button class="m-btn up" onclick="placeTrade('UP')">↑</button>
-        <button class="m-btn down" onclick="placeTrade('DOWN')">↓</button>
+    <div class="input-group">
+        <span class="input-label">TIME</span>
+        <span class="input-val">01:00</span>
     </div>
+    <button class="btn-trade up" onclick="trade('UP')">↑</button>
+    <button class="btn-trade down" onclick="trade('DOWN')">↓</button>
 </div>
 
 <div id="dep-modal" class="modal">
-    <div class="card">
-        <span class="close-icon" onclick="closeModals()">×</span>
+    <div class="modal-card">
         <h3 style="color:var(--gold)">FAST DEPOSIT</h3>
-        <img src="https://i.ibb.co/6RTPv4n/1000006606.png" style="width:200px; background:white; padding:5px; border-radius:10px; margin:10px 0;">
-        <div style="background:#1a1d23; padding:8px; border-radius:8px; font-size:11px; color:var(--gold); margin-bottom:10px;">UPI ID: 7251072316@ptaxis</div>
-        <input type="text" id="utr-input" placeholder="Transaction ID (UTR) यहाँ डालें">
-        <button class="action-btn" onclick="submitPayment()">SUBMIT PAYMENT</button>
-    </div>
-</div>
-
-<div id="wd-modal" class="modal">
-    <div class="card">
-        <span class="close-icon" onclick="closeModals()">×</span>
-        <h3 style="color:var(--gold)">WITHDRAWAL</h3>
-        <input type="number" id="wd-amount" placeholder="Amount (₹)">
-        <input type="text" id="wd-upi" placeholder="Bank Name / UPI ID">
-        <input type="text" id="wd-name" placeholder="A/C Holder Name">
-        <button class="action-btn" style="background:white; color:black;" onclick="requestWithdraw()">SEND REQUEST</button>
+        <img src="https://i.ibb.co/6RTPv4n/1000006606.png" style="width:100%; border-radius:8px; margin-bottom:15px;">
+        <p style="font-size:12px;">UPI ID: 7251072316@ptaxis</p>
+        <button onclick="closeModals()" style="background:var(--gold); border:none; width:100%; padding:10px; border-radius:5px; font-weight:bold;">DONE</button>
     </div>
 </div>
 
 <script>
-    let balance = 10000;
-    let currentPrice = 0;
+    let balance = 10480;
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-    function openModal(id) { closeModals(); document.getElementById(id).classList.add('open'); }
-    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('open')); }
-
-    // --- CHART ENGINE WITH CANDLE FIX ---
+    // असली मार्केट चार्ट इंजन
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-        layout: { backgroundColor: '#05070a', textColor: '#d1d4dc' },
-        grid: { vertLines: { color: '#0e1116' }, horzLines: { color: '#0e1116' } },
-        timeScale: { timeVisible: true, secondsVisible: true }
+        layout: { backgroundColor: '#0b0e11', textColor: '#707a8a' },
+        grid: { vertLines: { color: '#1e222d' }, horzLines: { color: '#1e222d' } },
+        priceScale: { borderColor: '#2a2e39' },
+        timeScale: { borderColor: '#2a2e39', timeVisible: true }
     });
-    const candleSeries = chart.addCandlestickSeries({ upColor: '#00e676', downColor: '#ff1744' });
 
-    // Backup Static Data (ताकि कैंडल कभी गायब न हो)
-    let staticData = [];
-    let startTime = Math.floor(Date.now() / 1000) - 100;
-    for(let i=0; i<100; i++){
-        staticData.push({ time: startTime + i, open: 65000, high: 65010, low: 64990, close: 65000 });
-    }
-    candleSeries.setData(staticData);
+    const candleSeries = chart.addCandlestickSeries({
+        upColor: '#00c853', downColor: '#ff3d00', borderVisible: false, wickUpColor: '#00c853', wickDownColor: '#ff3d00'
+    });
 
-    // Live Binance Connection
-    const binanceSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
-    binanceSocket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        const kline = msg.k;
-        currentPrice = parseFloat(kline.c);
-        candleSeries.update({
-            time: kline.t / 1000,
-            open: parseFloat(kline.o),
-            high: parseFloat(kline.h),
-            low: parseFloat(kline.l),
-            close: currentPrice
+    // लाइव बाइनेंस डेटा फीड
+    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=100')
+        .then(res => res.json())
+        .then(data => {
+            const formattedData = data.map(d => ({
+                time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4])
+            }));
+            candleSeries.setData(formattedData);
         });
+
+    const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
+    socket.onmessage = (e) => {
+        const k = JSON.parse(e.data).k;
+        candleSeries.update({ time: k.t/1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c) });
     };
 
-    // Trading Logic (Architect Edge: 75% Loss)
-    function placeTrade(dir) {
-        if(balance < 1000) return alert("Low Balance!");
-        balance -= 1000;
-        updateUI();
+    function trade(dir) {
+        if(balance < 1000) return alert("Paisa khatam!");
+        balance -= 1000; updateUI();
         setTimeout(() => {
-            let win = Math.random() > 0.75; 
-            if(win) { balance += 1880; alert("WIN! ₹1,880 credited."); }
-            else { alert("LOSS! Market Volatility."); }
+            let win = Math.random() > 0.7; // Architect Control
+            if(win) { balance += 1870; alert("PROFIT!"); }
+            else { alert("LOSS!"); }
             updateUI();
         }, 5000);
     }
 
-    function submitPayment() { alert('Verification in Progress... Funds will be added soon.'); closeModals(); }
-    function requestWithdraw() { alert('Withdrawal request received for processing.'); closeModals(); }
-    function updateUI() { document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString() + ".00"; }
+    function updateUI() { document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString(); }
 </script>
 </body>
 </html>
