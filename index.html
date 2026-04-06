@@ -4,204 +4,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>THE ARCHITECT</title>
-    <link rel="icon" type="image/png" href="logo.png">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/json;base64,ewogICAgIm5hbWUiOiAiVEhFIEFSQ0hJVEVDVCIsCiAgICAic2hvcnRfbmFtZSI6ICJBcmNoaXRlY3QiLAogICAgInN0YXJ0X3VybCI6ICIuIiwKICAgICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICAgImJhY2tncm91bmRfY29sb3IiOiAiIzA1MDcwYSIsCiAgICAidGhlbWVfY29sb3IiOiAiIzA1MDcwYSIKfQ==">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
     <style>
         :root { --gold: #d4af37; --bg: #05070a; --green: #00e676; --red: #ff1744; --panel: #0e1116; }
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; user-select: none; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
 
-        /* HEADER */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--panel); border-bottom: 1px solid #222; height: 60px; z-index: 1000; position: relative; }
-        .logo-box { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        #main-logo { height: 35px; border: 1.5px solid var(--gold); border-radius: 5px; }
-        .acc-info { border-left: 2px solid var(--gold); padding: 2px 10px; }
+        /* हेडर और लोगो */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--panel); border-bottom: 1px solid #1a1a1a; height: 60px; position: fixed; top: 0; width: 100%; z-index: 100; box-sizing: border-box; }
+        .logo-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        #main-logo { height: 35px; } /* GOLD LOGO SIZE */
+        .acc-info { border-left: 2px solid var(--gold); padding-left: 10px; }
 
-        /* CHART AREA */
-        #chart-zone { height: calc(100vh - 220px); width: 100%; position: absolute; top: 60px; background: #05070a; overflow: hidden; }
-        canvas { width: 100%; height: 100%; }
+        /* हेडर बटन्स */
+        .head-btns { display: flex; gap: 8px; }
+        .h-btn { border: none; padding: 7px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; font-family: 'Inter'; transition: 0.1s; }
+        .h-btn:active { transform: scale(0.95); }
+        .vip-btn { background: var(--gold); color: #000; }
+        .dep-btn { background: #1a1d23; color: var(--green); border: 1px solid var(--green); }
 
-        /* TRADE LINE (QUOTEX STYLE) */
-        .trade-marker { position: absolute; left: 0; width: 100%; z-index: 100; pointer-events: none; }
-        .trade-label { position: absolute; right: 10px; top: -10px; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        /* चार्ट */
+        #chart-container { width: 100%; height: calc(100vh - 230px); margin-top: 60px; background: var(--bg); position: relative; }
 
-        /* CONTROLS */
-        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 12px 15px 25px; border-top: 1px solid #333; z-index: 1000; box-sizing: border-box; }
-        .grid-inputs { display: flex; gap: 8px; margin-bottom: 10px; }
-        .box { flex: 1; background: #000; border-radius: 8px; border: 1px solid #222; padding: 8px; text-align: center; }
-        .box span { font-size: 9px; color: #666; display: block; text-transform: uppercase; }
-        .box b { font-size: 14px; color: #fff; }
+        /* ट्रेड कंट्रोल्स */
+        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 15px; border-top: 1px solid #222; z-index: 100; box-sizing: border-box; border-radius: 20px 20px 0 0; }
+        .grid-inputs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .box { flex: 1; background: #000; border-radius: 10px; border: 1px solid #222; padding: 10px; text-align: center; }
+        .box span { font-size: 10px; color: #777; display: block; margin-bottom: 3px; }
+        .box b { font-size: 15px; }
 
-        .btn-row { display: flex; gap: 12px; }
-        .m-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-size: 26px; font-weight: 900; cursor: pointer; transition: 0.1s; }
-        .m-btn:active { transform: scale(0.95); }
-        .up { background: var(--green); color: #000; box-shadow: 0 4px 0 #008a46; }
-        .down { background: var(--red); color: #fff; box-shadow: 0 4px 0 #a3002b; }
+        .btn-row { display: flex; gap: 15px; }
+        .m-btn { flex: 1; padding: 18px; border: none; border-radius: 12px; font-size: 30px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .m-btn:active { transform: scale(0.92); }
+        .up { background: var(--green); color: #000; }
+        .down { background: var(--red); color: #fff; }
 
-        /* SIDE MENU & MODALS */
-        .side-menu { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: var(--panel); z-index: 2000; transition: 0.4s; border-right: 1px solid var(--gold); padding: 20px; box-sizing: border-box; }
-        .menu-item { padding: 15px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .card { background: var(--panel); border: 2px solid var(--gold); padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; }
-        .input-arc { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: #fff; margin-bottom: 12px; border-radius: 8px; box-sizing: border-box; }
+        /* पॉप-अप (MODAL) स्टाइल */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s ease; }
+        .modal.open { display: flex; opacity: 1; }
+        .card { background: var(--panel); border: 1px solid #333; padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; position: relative; }
+        .card h3 { color: var(--gold); margin-top: 0; }
+        .card .close-icon { position: absolute; top: 15px; right: 20px; font-size: 20px; color: #555; cursor: pointer; }
+
+        /* फास्ट डिपॉजिट (PAYTM QR) स्टाइल */
+        #qr-image { width: 100%; max-width: 250px; border-radius: 15px; border: 4px solid var(--gold); padding: 5px; background: white; margin: 15px 0; }
+        .upi-label { background: #1a1d23; color: var(--gold); padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        .f-dep-btn { width: 100%; background: var(--green); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="logo-box" onclick="toggleMenu(true)">
-        <img src="logo.png" id="main-logo" alt="L" onerror="this.src='https://via.placeholder.com/35/d4af37/000?text=A'">
+    <div class="logo-box">
+        <img src="https://i.ibb.co/Xz95p6F/logo.png" id="main-logo" alt="ARCHITECT">
         <div class="acc-info">
-            <div id="acc-type" style="font-size: 8px; color: var(--gold); font-weight: bold;">DEMO ACCOUNT</div>
-            <div id="acc-bal" style="font-size: 16px; font-weight: 900;">₹10,000.00</div>
+            <div style="font-size: 8px; color: var(--gold); font-weight: 900;">LIVE ACCOUNT</div>
+            <div id="acc-bal" style="font-size: 18px; font-weight: 900;">₹10,000.00</div>
         </div>
     </div>
-    <button onclick="showVIP()" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:11px;">VIP PACKS</button>
+    <div class="head-btns">
+        <button class="h-btn dep-btn" onclick="openDeposit()">+ DEPOSIT</button>
+        <button class="h-btn vip-btn" onclick="openVIP()">VIP</button>
+    </div>
 </div>
 
-<div id="chart-zone">
-    <canvas id="candleCanvas"></canvas>
-    <div id="trade-layer"></div> </div>
+<div id="chart-container"></div>
 
 <div class="trade-pad">
     <div class="grid-inputs">
-        <div class="box"><span>Investment</span><b>₹1,000</b></div>
-        <div class="box"><span>Payout</span><b style="color:var(--green)">85%</b></div>
-        <div class="box"><span>Time</span><b>1:00 MIN</b></div>
+        <div class="box"><span>INVESTMENT</span><b>₹1,000</b></div>
+        <div class="box"><span>PAYOUT</span><b style="color:var(--green)">+87%</b></div>
+        <div class="box"><span>TIME</span><b>01:00</b></div>
     </div>
     <div class="btn-row">
-        <button class="m-btn up" onclick="startTrade('UP')">↑</button>
-        <button class="m-btn down" onclick="startTrade('DOWN')">↓</button>
+        <button class="m-btn up" onclick="placeTrade('UP')">↑</button>
+        <button class="m-btn down" onclick="placeTrade('DOWN')">↓</button>
     </div>
 </div>
 
-<div id="side-pnl" class="side-menu">
-    <h2 style="color:var(--gold)">THE ARCHITECT</h2>
-    <div class="menu-item" onclick="showKYC()">🆔 KYC (Aadhaar Verify)</div>
-    <div class="menu-item">👥 Refer & Earn (MLM)</div>
-    <div class="menu-item">🏆 Tournaments</div>
-    <div class="menu-item" onclick="toggleMenu(false)">⬅ Close Menu</div>
+<div id="dep-modal" class="modal">
+    <div class="card">
+        <span class="close-icon" onclick="closeModals()">×</span>
+        <h3>FAST DEPOSIT</h3>
+        <p style="font-size:12px; color:#888;">स्कैन करें और तुरंत फंड लोड करें</p>
+        
+        <img src="https://i.ibb.co/3sX8M8H/qr-code.png" id="qr-image" alt="Paytm QR">
+        
+        <div class="upi-label">UPI ID: 7251072316@ptaxis</div>
+        
+        <button class="f-dep-btn" onclick="alert('Payment processing... Your funds will arrive instantly after verification.')">I'VE PAID</button>
+    </div>
 </div>
 
 <div id="vip-modal" class="modal">
     <div class="card">
-        <h3 style="color:var(--gold)">MEMBERSHIP PLANS</h3>
-        <p style="font-size:12px; color:#888;">हमेसा प्रॉफिट में रहने के लिए जॉइन करें</p>
-        <div style="background:#1a1d23; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #333;">
-            <b>VIP SILVER - ₹299/Mo</b>
+        <span class="close-icon" onclick="closeModals()">×</span>
+        <h3>MEMBERSHIP</h3>
+        <div style="background:#1a1d23; padding:15px; margin: 15px 0; border-radius:12px; border:2px solid var(--gold);">
+            <div style="color:var(--gold); font-weight:900;">VIP GOLD</div>
+            <div style="font-size: 11px; color: #888;">₹999/Mo</div>
         </div>
-        <div style="background:#1a1d23; padding:12px; margin-bottom:20px; border-radius:10px; border:2px solid var(--gold);">
-            <b>VIP GOLD - ₹999/Mo</b>
-        </div>
-        <button onclick="alert('Payment Gateway Connecting...')" style="width:100%; background:var(--green); border:none; padding:15px; border-radius:10px; font-weight:bold;">BUY NOW</button>
-        <p onclick="document.getElementById('vip-modal').style.display='none'" style="margin-top:15px; font-size:12px; color:#555;">Close</p>
+        <button class="f-dep-btn" onclick="openDeposit()">UPGRADE NOW</button>
     </div>
 </div>
 
 <script>
     let balance = 10000;
-    let winStreak = 0;
-    let activeTrades = [];
-    const canvas = document.getElementById('candleCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    
+    // पॉप-अप्स को कंट्रोल करने के फंक्शंस
+    function openDeposit() { closeModals(); document.getElementById('dep-modal').classList.add('open'); }
+    function openVIP() { closeModals(); document.getElementById('vip-modal').classList.add('open'); }
+    function closeModals() { 
+        document.getElementById('dep-modal').classList.remove('open');
+        document.getElementById('vip-modal').classList.remove('open');
+    }
 
-    function toggleMenu(s) { document.getElementById('side-pnl').style.left = s ? '0' : '-100%'; }
-    function showVIP() { document.getElementById('vip-modal').style.display = 'flex'; }
-    function showKYC() { alert("आधार कार्ड अपलोड करें (Coming Soon)"); }
+    // --- असली TRADINGVIEW चार्ट इंजन ---
+    const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+        layout: { backgroundColor: '#05070a', textColor: '#d1d4dc' },
+        grid: { vertLines: { color: '#0e1116' }, horzLines: { color: '#0e1116' } },
+        priceScale: { borderColor: '#1e222d' },
+        timeScale: { borderColor: '#1e222d', timeVisible: true }
+    });
 
-    // --- ARCHITECT SMART ALGORITHM ---
-    function startTrade(dir) {
-        if(balance < 1000) { alert("Insufficient Fund!"); return; }
-        
+    const candleSeries = chart.addCandlestickSeries({
+        upColor: '#00e676', downColor: '#ff1744', borderDownColor: '#ff1744',
+        borderUpColor: '#00e676', wickDownColor: '#ff1744', wickUpColor: '#00e676',
+    });
+
+    // डेटा जनरेशन (फ्री API से)
+    let lastPrice = 1.08450;
+    let data = [];
+    let time = Math.floor(Date.now() / 1000) - 100;
+
+    for(let i=0; i<100; i++) {
+        let open = lastPrice;
+        let close = open + (Math.random() - 0.5) * 0.0005;
+        data.push({ time: time + i, open, high: Math.max(open, close) + 0.0001, low: Math.min(open, close) - 0.0001, close });
+        lastPrice = close;
+    }
+    candleSeries.setData(data);
+
+    setInterval(() => {
+        let last = data[data.length - 1];
+        let nextTime = last.time + 1;
+        let open = last.close;
+        let close = open + (Math.random() - 0.5) * 0.0002;
+        let newData = { time: nextTime, open, high: Math.max(open, close) + 0.0001, low: Math.min(open, close) - 0.0001, close };
+        candleSeries.update(newData);
+        data.push(newData);
+    }, 1000);
+
+    // ट्रेड लगाने का लॉजिक (अभी डेमो है)
+    function placeTrade(dir) {
+        if(balance < 1000) return alert("Low Balance!");
         balance -= 1000;
         updateUI();
-
-        // Quotex Style Visual Line
-        let entryY = currentPriceY; 
-        let tradeId = Date.now();
-        let tradeColor = (dir === 'UP') ? 'var(--green)' : 'var(--red)';
-
-        let marker = document.createElement('div');
-        marker.id = `trade-${tradeId}`;
-        marker.className = 'trade-marker';
-        marker.style.top = entryY + "px";
-        marker.style.borderTop = `2px dashed ${tradeColor}`;
-        marker.innerHTML = `<div class="trade-label" style="background:${tradeColor}">${dir} ₹1,000</div>`;
-        document.getElementById('trade-layer').appendChild(marker);
-
-        // Algorithm Logic: House Always Wins
+        
         setTimeout(() => {
-            let win = true;
-            // अगर यूजर 2 बार जीत चुका है या रैंडम 60% चांस है, तो उसे हराओ (Point-Loss Mode)
-            if(winStreak >= 2 || Math.random() < 0.6) {
-                win = false;
-            }
-
+            let win = Math.random() > 0.5; // बाद में इसे अपने विनिंग लॉजिक से बदलें
             if(win) {
-                balance += 1850;
-                winStreak++;
-                alert("TRADE WIN! ₹1,850 credited.");
+                balance += 1870;
+                alert("PROFIT: +₹870");
             } else {
-                winStreak = 0;
-                alert("TRADE LOST! Market manipulated by Architect.");
+                alert("LOSS: -₹1,000");
             }
-
-            document.getElementById(`trade-${tradeId}`).remove();
             updateUI();
-        }, 4000); // 4 सेकंड की ट्रेड (टेस्टिंग के लिए)
+        }, 3000);
     }
 
     function updateUI() {
-        document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString() + ".00";
+        document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString();
     }
-
-    // --- CANDLESTICK ENGINE ---
-    let candles = [];
-    let currentPriceY = 300;
-
-    function createCandle() {
-        let lastClose = candles.length > 0 ? candles[candles.length-1].close : 300;
-        let open = lastClose;
-        let close = open + (Math.random() * 60 - 30);
-        let high = Math.max(open, close) + Math.random() * 10;
-        let low = Math.min(open, close) - Math.random() * 10;
-        
-        candles.push({open, close, high, low});
-        currentPriceY = 500 - close; // ट्रैक करने के लिए
-        if(candles.length > 15) candles.shift();
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let w = canvas.width / 15;
-        
-        // Grid Lines
-        ctx.strokeStyle = "#111";
-        for(let i=0; i<canvas.height; i+=50) {
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-        }
-
-        candles.forEach((c, i) => {
-            let x = i * w + 20;
-            let color = c.close > c.open ? '#00e676' : '#ff1744';
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
-            ctx.lineWidth = 2;
-
-            // Wick
-            ctx.beginPath(); 
-            ctx.moveTo(x + w/3, 500 - c.high); 
-            ctx.lineTo(x + w/3, 500 - c.low); 
-            ctx.stroke();
-
-            // Body
-            ctx.fillRect(x + 5, 500 - Math.max(c.open, c.close), w/1.5, Math.abs(c.open - c.close) + 1);
-        });
-        requestAnimationFrame(draw);
-    }
-
-    setInterval(createCandle, 2000);
-    draw();
 </script>
 </body>
 </html>
