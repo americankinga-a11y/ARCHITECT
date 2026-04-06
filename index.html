@@ -38,7 +38,8 @@
         .box b { font-size: 14px; }
 
         .btn-row { display: flex; gap: 15px; }
-        .m-btn { flex: 1; padding: 18px; border: none; border-radius: 12px; font-size: 30px; font-weight: 900; cursor: pointer; }
+        .m-btn { flex: 1; padding: 18px; border: none; border-radius: 12px; font-size: 30px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .m-btn:active { transform: scale(0.92); }
         .up { background: var(--green); color: #000; }
         .down { background: var(--red); color: #fff; }
 
@@ -48,7 +49,7 @@
         .card { background: var(--panel); border: 1px solid var(--gold); padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; position: relative; }
         .close-icon { position: absolute; top: 15px; right: 20px; font-size: 20px; color: #555; cursor: pointer; }
 
-        input { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; font-family: 'Inter'; box-sizing: border-box; }
+        input { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
         .action-btn { width: 100%; background: var(--gold); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
@@ -86,10 +87,10 @@
     <div class="card">
         <span class="close-icon" onclick="closeModals()">×</span>
         <h3 style="color:var(--gold)">FAST DEPOSIT</h3>
-        <img src="https://i.ibb.co/3sX8M8H/qr-code.png" style="width:200px; background:white; padding:5px; border-radius:10px; margin:10px 0;">
+        <img src="https://i.ibb.co/6RTPv4n/1000006606.png" style="width:200px; background:white; padding:5px; border-radius:10px; margin:10px 0;">
         <div style="background:#1a1d23; padding:8px; border-radius:8px; font-size:11px; color:var(--gold); margin-bottom:10px;">UPI ID: 7251072316@ptaxis</div>
-        <input type="text" placeholder="Transaction ID (UTR) यहाँ डालें">
-        <button class="action-btn" onclick="alert('Payment Submitted for Verification!')">SUBMIT</button>
+        <input type="text" id="utr-input" placeholder="Transaction ID (UTR) यहाँ डालें">
+        <button class="action-btn" onclick="submitPayment()">SUBMIT PAYMENT</button>
     </div>
 </div>
 
@@ -97,10 +98,10 @@
     <div class="card">
         <span class="close-icon" onclick="closeModals()">×</span>
         <h3 style="color:var(--gold)">WITHDRAWAL</h3>
-        <input type="number" placeholder="Amount (₹)">
-        <input type="text" placeholder="Bank Name / UPI ID">
-        <input type="text" placeholder="A/C Holder Name">
-        <button class="action-btn" style="background:white; color:black;" onclick="alert('Withdrawal Request Sent!')">SEND REQUEST</button>
+        <input type="number" id="wd-amount" placeholder="Amount (₹)">
+        <input type="text" id="wd-upi" placeholder="Bank Name / UPI ID">
+        <input type="text" id="wd-name" placeholder="A/C Holder Name">
+        <button class="action-btn" style="background:white; color:black;" onclick="requestWithdraw()">SEND REQUEST</button>
     </div>
 </div>
 
@@ -111,7 +112,7 @@
     function openModal(id) { closeModals(); document.getElementById(id).classList.add('open'); }
     function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('open')); }
 
-    // --- असली BINANCE LIVE DATA CHART ---
+    // --- CHART ENGINE WITH CANDLE FIX ---
     const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
         layout: { backgroundColor: '#05070a', textColor: '#d1d4dc' },
         grid: { vertLines: { color: '#0e1116' }, horzLines: { color: '#0e1116' } },
@@ -119,7 +120,15 @@
     });
     const candleSeries = chart.addCandlestickSeries({ upColor: '#00e676', downColor: '#ff1744' });
 
-    // Binance WebSocket (BTC/USDT)
+    // Backup Static Data (ताकि कैंडल कभी गायब न हो)
+    let staticData = [];
+    let startTime = Math.floor(Date.now() / 1000) - 100;
+    for(let i=0; i<100; i++){
+        staticData.push({ time: startTime + i, open: 65000, high: 65010, low: 64990, close: 65000 });
+    }
+    candleSeries.setData(staticData);
+
+    // Live Binance Connection
     const binanceSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
     binanceSocket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
@@ -134,27 +143,22 @@
         });
     };
 
+    // Trading Logic (Architect Edge: 75% Loss)
     function placeTrade(dir) {
         if(balance < 1000) return alert("Low Balance!");
         balance -= 1000;
         updateUI();
-
-        // Shadow Control Logic (75% House Advantage)
         setTimeout(() => {
             let win = Math.random() > 0.75; 
-            if(win) {
-                balance += 1880;
-                alert("WIN! ₹1,880 added.");
-            } else {
-                alert("LOSS! Market Volatility.");
-            }
+            if(win) { balance += 1880; alert("WIN! ₹1,880 credited."); }
+            else { alert("LOSS! Market Volatility."); }
             updateUI();
         }, 5000);
     }
 
-    function updateUI() {
-        document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString();
-    }
+    function submitPayment() { alert('Verification in Progress... Funds will be added soon.'); closeModals(); }
+    function requestWithdraw() { alert('Withdrawal request received for processing.'); closeModals(); }
+    function updateUI() { document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString() + ".00"; }
 </script>
 </body>
 </html>
