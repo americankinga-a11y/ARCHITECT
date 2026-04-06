@@ -3,146 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT V19 | INSTANT PAY</title>
+    <title>THE ARCHITECT</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         :root { --gold: #d4af37; --bg: #05070a; --green: #00e676; --red: #ff1744; --panel: #0e1116; }
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; user-select: none; }
 
         /* HEADER */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--panel); border-bottom: 1px solid #222; height: 60px; z-index: 100; position: relative; }
-        .acc-info { border-left: 3px solid var(--gold); padding: 2px 10px; cursor: pointer; }
-        .bal { font-size: 17px; font-weight: 900; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--panel); border-bottom: 1px solid #222; height: 60px; z-index: 1000; position: relative; }
+        .logo-box { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        #main-logo { height: 35px; border: 1.5px solid var(--gold); border-radius: 5px; }
+        .acc-info { border-left: 2px solid var(--gold); padding: 2px 10px; }
 
-        /* CHART */
-        #chart-zone { height: calc(100vh - 180px); width: 100%; position: absolute; top: 60px; z-index: 10; }
+        /* CHART AREA */
+        #chart-zone { height: calc(100vh - 220px); width: 100%; position: absolute; top: 60px; background: #05070a; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
 
-        /* MOBILE CONTROLS (SMALL BUTTONS) */
-        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 10px 15px 25px; border-top: 1px solid #222; z-index: 1000; }
-        .grid-inputs { display: flex; gap: 10px; margin-bottom: 8px; }
-        .box { flex: 1; background: #000; border-radius: 8px; border: 1px solid #333; padding: 6px; text-align: center; font-size: 11px; color: #888; }
-        .box b { display: block; color: #fff; font-size: 14px; }
+        /* TRADE LINE (QUOTEX STYLE) */
+        .trade-marker { position: absolute; left: 0; width: 100%; z-index: 100; pointer-events: none; }
+        .trade-label { position: absolute; right: 10px; top: -10px; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+        /* CONTROLS */
+        .trade-pad { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 12px 15px 25px; border-top: 1px solid #333; z-index: 1000; box-sizing: border-box; }
+        .grid-inputs { display: flex; gap: 8px; margin-bottom: 10px; }
+        .box { flex: 1; background: #000; border-radius: 8px; border: 1px solid #222; padding: 8px; text-align: center; }
+        .box span { font-size: 9px; color: #666; display: block; text-transform: uppercase; }
+        .box b { font-size: 14px; color: #fff; }
 
         .btn-row { display: flex; gap: 12px; }
-        .m-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 22px; font-weight: 900; cursor: pointer; }
-        .up { background: var(--green); color: #000; box-shadow: 0 3px 0 #008a46; }
-        .down { background: var(--red); color: #fff; box-shadow: 0 3px 0 #a3002b; }
+        .m-btn { flex: 1; padding: 15px; border: none; border-radius: 12px; font-size: 26px; font-weight: 900; cursor: pointer; transition: 0.1s; }
+        .m-btn:active { transform: scale(0.95); }
+        .up { background: var(--green); color: #000; box-shadow: 0 4px 0 #008a46; }
+        .down { background: var(--red); color: #fff; box-shadow: 0 4px 0 #a3002b; }
 
-        /* RESULT POPUP */
-        .res-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 5000; justify-content: center; align-items: center; }
-        .res-card { background: var(--panel); border: 2px solid var(--gold); padding: 30px; border-radius: 20px; text-align: center; width: 280px; }
-
-        /* INSTANT QR DEPOSIT MODAL */
-        .dep-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 9000; justify-content: center; align-items: center; }
-        .dep-card { background: #12151a; border: 2px solid var(--gold); padding: 25px; border-radius: 20px; text-align: center; width: 85%; }
-        .qr-box { background: white; padding: 10px; border-radius: 12px; display: inline-block; margin: 15px 0; border: 3px solid var(--gold); }
-        .utr-in { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; text-align: center; font-size: 16px; box-sizing: border-box; }
+        /* SIDE MENU & MODALS */
+        .side-menu { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: var(--panel); z-index: 2000; transition: 0.4s; border-right: 1px solid var(--gold); padding: 20px; box-sizing: border-box; }
+        .menu-item { padding: 15px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .card { background: var(--panel); border: 2px solid var(--gold); padding: 25px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; }
+        .input-arc { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: #fff; margin-bottom: 12px; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="acc-info" onclick="switchAcc()">
-        <div id="acc-type" style="font-size: 9px; color: var(--gold); font-weight: bold;">DEMO ACCOUNT</div>
-        <div id="acc-bal" class="bal">₹10,000.00</div>
+    <div class="logo-box" onclick="toggleMenu(true)">
+        <img src="logo.png" id="main-logo" alt="L" onerror="this.src='https://via.placeholder.com/35/d4af37/000?text=A'">
+        <div class="acc-info">
+            <div id="acc-type" style="font-size: 8px; color: var(--gold); font-weight: bold;">DEMO ACCOUNT</div>
+            <div id="acc-bal" style="font-size: 16px; font-weight: 900;">₹10,000.00</div>
+        </div>
     </div>
-    <button onclick="showDep(true)" style="background:var(--green); border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">DEPOSIT</button>
+    <button onclick="showVIP()" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:11px;">VIP PACKS</button>
 </div>
 
 <div id="chart-zone">
-    <div id="trading-engine" style="height:100%;"></div>
-</div>
+    <canvas id="candleCanvas"></canvas>
+    <div id="trade-layer"></div> </div>
 
 <div class="trade-pad">
     <div class="grid-inputs">
-        <div class="box">INVESTMENT<b>₹1,000</b></div>
-        <div class="box">TIMER<b>1:00 MIN</b></div>
+        <div class="box"><span>Investment</span><b>₹1,000</b></div>
+        <div class="box"><span>Payout</span><b style="color:var(--green)">85%</b></div>
+        <div class="box"><span>Time</span><b>1:00 MIN</b></div>
     </div>
     <div class="btn-row">
-        <button class="m-btn up" onclick="trade()">↑</button>
-        <button class="m-btn down" onclick="trade()">↓</button>
+        <button class="m-btn up" onclick="startTrade('UP')">↑</button>
+        <button class="m-btn down" onclick="startTrade('DOWN')">↓</button>
     </div>
 </div>
 
-<div id="res-screen" class="res-modal">
-    <div class="res-card">
-        <h2 id="res-title" style="margin:0; font-size:14px; color:#888;">TRADE EXPIRED</h2>
-        <div id="res-amt" style="font-size:45px; font-weight:900; margin:10px 0; color:var(--red);">₹0.00</div>
-        <button onclick="closeRes()" style="background:none; border:1px solid #333; color:#fff; padding:8px 25px; border-radius:5px; margin-top:15px; cursor:pointer;">CONTINUE</button>
-    </div>
+<div id="side-pnl" class="side-menu">
+    <h2 style="color:var(--gold)">THE ARCHITECT</h2>
+    <div class="menu-item" onclick="showKYC()">🆔 KYC (Aadhaar Verify)</div>
+    <div class="menu-item">👥 Refer & Earn (MLM)</div>
+    <div class="menu-item">🏆 Tournaments</div>
+    <div class="menu-item" onclick="toggleMenu(false)">⬅ Close Menu</div>
 </div>
 
-<div id="dep-screen" class="dep-modal">
-    <div class="dep-card">
-        <h3 style="color:var(--gold); margin:0;">FAST DEPOSIT (MIN ₹1,000)</h3>
-        <div class="qr-box">
-            <img src="https://raw.githubusercontent.com/americankinga-a11y/ARCHITECT/main/1000006609.png" width="200" alt="Payment QR">
+<div id="vip-modal" class="modal">
+    <div class="card">
+        <h3 style="color:var(--gold)">MEMBERSHIP PLANS</h3>
+        <p style="font-size:12px; color:#888;">हमेसा प्रॉफिट में रहने के लिए जॉइन करें</p>
+        <div style="background:#1a1d23; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #333;">
+            <b>VIP SILVER - ₹299/Mo</b>
         </div>
-        <p style="font-size:12px; color:#aaa; margin-bottom:10px;">स्कैन करें और पेमेंट के बाद UTR नंबर डालें</p>
-        <input type="number" id="dep-amt" class="utr-in" placeholder="Amount (Min ₹1,000)" value="1000">
-        <input type="text" id="utr" class="utr-in" placeholder="12-Digit UTR Number">
-        <button onclick="fastSync()" style="width:100%; background:var(--green); border:none; padding:15px; border-radius:10px; font-weight:bold; cursor:pointer;">VERIFY & SYNC</button>
-        <p onclick="showDep(false)" style="margin-top:15px; color:#444; cursor:pointer; font-size:12px;">Back to Terminal</p>
+        <div style="background:#1a1d23; padding:12px; margin-bottom:20px; border-radius:10px; border:2px solid var(--gold);">
+            <b>VIP GOLD - ₹999/Mo</b>
+        </div>
+        <button onclick="alert('Payment Gateway Connecting...')" style="width:100%; background:var(--green); border:none; padding:15px; border-radius:10px; font-weight:bold;">BUY NOW</button>
+        <p onclick="document.getElementById('vip-modal').style.display='none'" style="margin-top:15px; font-size:12px; color:#555;">Close</p>
     </div>
 </div>
 
-<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-    new TradingView.widget({
-        "autosize": true, "symbol": "BITSTAMP:BTCUSD", "interval": "1",
-        "theme": "dark", "style": "1", "container_id": "trading-engine",
-        "hide_top_toolbar": true, "hide_legend": true, "backgroundColor": "#05070a", "studies": []
-    });
+    let balance = 10000;
+    let winStreak = 0;
+    let activeTrades = [];
+    const canvas = document.getElementById('candleCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    let demo = 10000; let real = 0; let isDemo = true;
+    function toggleMenu(s) { document.getElementById('side-pnl').style.left = s ? '0' : '-100%'; }
+    function showVIP() { document.getElementById('vip-modal').style.display = 'flex'; }
+    function showKYC() { alert("आधार कार्ड अपलोड करें (Coming Soon)"); }
 
-    function showDep(s) { document.getElementById('dep-screen').style.display = s ? 'flex' : 'none'; }
-    function closeRes() { document.getElementById('res-screen').style.display = 'none'; }
-    function switchAcc() {
-        isDemo = !isDemo;
-        document.getElementById('acc-type').innerText = isDemo ? "DEMO ACCOUNT" : "REAL ACCOUNT (ARC)";
-        update();
-    }
+    // --- ARCHITECT SMART ALGORITHM ---
+    function startTrade(dir) {
+        if(balance < 1000) { alert("Insufficient Fund!"); return; }
+        
+        balance -= 1000;
+        updateUI();
 
-    function fastSync() {
-        let amt = document.getElementById('dep-amt').value;
-        let utr = document.getElementById('utr').value;
+        // Quotex Style Visual Line
+        let entryY = currentPriceY; 
+        let tradeId = Date.now();
+        let tradeColor = (dir === 'UP') ? 'var(--green)' : 'var(--red)';
 
-        if(amt < 1000) { 
-            alert("मैक्सिमम डिपॉजिट ₹1,000 है। इससे नीचे स्वीकार नहीं है।"); 
-            return; 
-        }
-        if(utr.length < 10) { 
-            alert("कृपया सही UTR नंबर डालें।"); 
-            return; 
-        }
+        let marker = document.createElement('div');
+        marker.id = `trade-${tradeId}`;
+        marker.className = 'trade-marker';
+        marker.style.top = entryY + "px";
+        marker.style.borderTop = `2px dashed ${tradeColor}`;
+        marker.innerHTML = `<div class="trade-label" style="background:${tradeColor}">${dir} ₹1,000</div>`;
+        document.getElementById('trade-layer').appendChild(marker);
 
-        alert("ARC Node: भुगतान की पुष्टि की जा रही है...");
+        // Algorithm Logic: House Always Wins
         setTimeout(() => {
-            real += parseInt(amt);
-            if(isDemo) switchAcc();
-            update();
-            showDep(false);
-            alert("सफलता! ₹" + amt + " आपके वॉलेट में जोड़ दिए गए हैं।");
-        }, 1500);
+            let win = true;
+            // अगर यूजर 2 बार जीत चुका है या रैंडम 60% चांस है, तो उसे हराओ (Point-Loss Mode)
+            if(winStreak >= 2 || Math.random() < 0.6) {
+                win = false;
+            }
+
+            if(win) {
+                balance += 1850;
+                winStreak++;
+                alert("TRADE WIN! ₹1,850 credited.");
+            } else {
+                winStreak = 0;
+                alert("TRADE LOST! Market manipulated by Architect.");
+            }
+
+            document.getElementById(`trade-${tradeId}`).remove();
+            updateUI();
+        }, 4000); // 4 सेकंड की ट्रेड (टेस्टिंग के लिए)
     }
 
-    function trade() {
-        let bal = isDemo ? demo : real;
-        if(bal < 1000) { alert("Insufficient Fund. Please Deposit."); return; }
-        if(isDemo) demo -= 1000; else real -= 1000;
-        update();
-
-        setTimeout(() => {
-            document.getElementById('res-screen').style.display = 'flex';
-            update();
-        }, 2000);
+    function updateUI() {
+        document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString() + ".00";
     }
 
-    function update() {
-        let v = isDemo ? demo : real;
-        document.getElementById('acc-bal').innerText = "₹" + v.toLocaleString() + ".00";
-        document.getElementById('acc-bal').style.color = isDemo ? "white" : "var(--green)";
+    // --- CANDLESTICK ENGINE ---
+    let candles = [];
+    let currentPriceY = 300;
+
+    function createCandle() {
+        let lastClose = candles.length > 0 ? candles[candles.length-1].close : 300;
+        let open = lastClose;
+        let close = open + (Math.random() * 60 - 30);
+        let high = Math.max(open, close) + Math.random() * 10;
+        let low = Math.min(open, close) - Math.random() * 10;
+        
+        candles.push({open, close, high, low});
+        currentPriceY = 500 - close; // ट्रैक करने के लिए
+        if(candles.length > 15) candles.shift();
     }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let w = canvas.width / 15;
+        
+        // Grid Lines
+        ctx.strokeStyle = "#111";
+        for(let i=0; i<canvas.height; i+=50) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+        }
+
+        candles.forEach((c, i) => {
+            let x = i * w + 20;
+            let color = c.close > c.open ? '#00e676' : '#ff1744';
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2;
+
+            // Wick
+            ctx.beginPath(); 
+            ctx.moveTo(x + w/3, 500 - c.high); 
+            ctx.lineTo(x + w/3, 500 - c.low); 
+            ctx.stroke();
+
+            // Body
+            ctx.fillRect(x + 5, 500 - Math.max(c.open, c.close), w/1.5, Math.abs(c.open - c.close) + 1);
+        });
+        requestAnimationFrame(draw);
+    }
+
+    setInterval(createCandle, 2000);
+    draw();
 </script>
 </body>
 </html>
