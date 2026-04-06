@@ -1,155 +1,896 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE ARCHITECT PRO</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE ARCHITECT — Trading Terminal</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <style>
-        :root { --gold: #d4af37; --bg: #0b0e11; --green: #00c853; --red: #ff3d00; --panel: #151921; }
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; }
+  :root {
+    --bg-void: #060810;
+    --bg-panel: #0b0f1a;
+    --bg-surface: #111827;
+    --bg-raised: #1a2235;
+    --accent-primary: #00d4ff;
+    --accent-secondary: #ff6b35;
+    --accent-green: #00ff88;
+    --accent-red: #ff3355;
+    --accent-gold: #ffd700;
+    --text-primary: #e8edf8;
+    --text-secondary: #8899bb;
+    --text-muted: #445566;
+    --border-dim: rgba(0,212,255,0.12);
+    --border-bright: rgba(0,212,255,0.35);
+    --font-mono: 'Space Mono', monospace;
+    --font-display: 'Rajdhani', sans-serif;
+  }
 
-        /* हेडर - जहाँ LIVE ACCOUNT Green होगा */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: var(--panel); height: 60px; border-bottom: 1px solid #2a2e39; }
-        .bal-box { background: #1e222d; padding: 5px 15px; border-radius: 6px; border: 1px solid #363c4e; text-align: center; }
-        .live-tag { font-size: 10px; color: var(--green); font-weight: 900; letter-spacing: 1px; display: block; text-shadow: 0 0 5px var(--green); }
-        .bal-val { font-weight: 900; color: white; font-size: 18px; }
+  html, body {
+    height: 100%;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    overflow: hidden;
+  }
 
-        /* मार्केट मोड सेलेक्टर */
-        .market-nav { position: absolute; top: 70px; left: 15px; z-index: 100; display: flex; gap: 8px; }
-        .m-btn { background: #1e222d; border: 1px solid #363c4e; color: #707a8a; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .m-btn.active { border-color: var(--gold); color: var(--gold); }
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
 
-        #chart-container { width: 100%; height: calc(100vh - 220px); background: var(--bg); }
+  /* CORNER DECORATION */
+  .corner-mark {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--accent-primary);
+    border-style: solid;
+    opacity: 0.6;
+  }
+  .corner-mark.tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+  .corner-mark.tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+  .corner-mark.bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+  .corner-mark.br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
 
-        /* प्रोफेशनल ट्रेड पैनल */
-        .trade-controls { position: fixed; bottom: 0; width: 100%; background: var(--panel); padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid #2a2e39; box-sizing: border-box; border-radius: 20px 20px 0 0; }
-        .input-group { background: #1e222d; border-radius: 10px; padding: 10px; border: 1px solid #363c4e; }
-        .input-label { font-size: 10px; color: #707a8a; display: block; margin-bottom: 4px; }
-        .input-val { font-size: 16px; font-weight: bold; color: white; }
+  /* LAYOUT */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 0;
+  }
 
-        .btn-trade { height: 70px; border: none; border-radius: 12px; font-size: 35px; font-weight: 900; cursor: pointer; transition: 0.1s; }
-        .btn-trade:active { transform: scale(0.92); }
-        .up { background: var(--green); color: #0b0e11; }
-        .down { background: var(--red); color: white; }
+  /* TOP BAR */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+    position: relative;
+  }
 
-        /* मॉडल्स */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-card { background: var(--panel); border: 1px solid var(--gold); padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
-    </style>
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-icon {
+    width: 28px;
+    height: 28px;
+    position: relative;
+  }
+
+  .brand-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+  }
+
+  .brand-sub {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    margin-top: 1px;
+  }
+
+  .ticker-strip {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .ticker-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .ticker-symbol {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .ticker-price {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .ticker-change {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+  }
+
+  .up { color: var(--accent-green); }
+  .down { color: var(--accent-red); }
+
+  .sys-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  #clock {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-primary);
+    letter-spacing: 1px;
+  }
+
+  /* MAIN BODY */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* CHART AREA — 70% */
+  #chart-area {
+    flex: 0 0 70%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-void);
+    border-right: 1px solid var(--border-dim);
+    position: relative;
+  }
+
+  #chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .chart-pair {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .pair-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 2px;
+  }
+
+  .pair-exchange {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .price-main {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    letter-spacing: 1px;
+  }
+
+  .price-stats {
+    display: flex;
+    gap: 20px;
+  }
+
+  .pstat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .pstat-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .pstat-val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .timeframe-btns {
+    display: flex;
+    gap: 2px;
+  }
+
+  .tf-btn {
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .tf-btn:hover, .tf-btn.active {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  #chart-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* BOTTOM INDICATORS STRIP */
+  #indicators {
+    display: flex;
+    gap: 1px;
+    padding: 6px 16px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .ind-chip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-dim);
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+
+  .ind-chip span {
+    color: var(--accent-primary);
+  }
+
+  /* TRADING PANEL — 30% */
+  #trade-panel {
+    flex: 0 0 30%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #trade-panel::-webkit-scrollbar {
+    width: 4px;
+  }
+  #trade-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #trade-panel::-webkit-scrollbar-thumb {
+    background: var(--border-dim);
+  }
+
+  /* PANEL SECTION */
+  .panel-section {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-dim);
+    position: relative;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-dim);
+  }
+
+  /* ORDER TYPE TABS */
+  .order-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    margin-bottom: 10px;
+  }
+
+  .ot-btn {
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .ot-btn.active {
+    background: rgba(0,212,255,0.08);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  /* BUY/SELL TOGGLE */
+  .bs-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    margin-bottom: 10px;
+  }
+
+  .bs-btn {
+    padding: 8px;
+    border: 1px solid;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .bs-btn.buy {
+    background: rgba(0,255,136,0.05);
+    border-color: rgba(0,255,136,0.3);
+    color: var(--accent-green);
+  }
+
+  .bs-btn.buy:hover, .bs-btn.buy.active {
+    background: rgba(0,255,136,0.15);
+    border-color: var(--accent-green);
+    box-shadow: inset 0 0 20px rgba(0,255,136,0.05);
+  }
+
+  .bs-btn.sell {
+    background: rgba(255,51,85,0.05);
+    border-color: rgba(255,51,85,0.3);
+    color: var(--accent-red);
+  }
+
+  .bs-btn.sell:hover, .bs-btn.sell.active {
+    background: rgba(255,51,85,0.15);
+    border-color: var(--accent-red);
+    box-shadow: inset 0 0 20px rgba(255,51,85,0.05);
+  }
+
+  /* INPUT FIELDS */
+  .field-row {
+    margin-bottom: 7px;
+  }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .field-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-dim);
+    transition: border-color 0.15s;
+  }
+
+  .field-wrap:focus-within {
+    border-color: var(--accent-primary);
+  }
+
+  .field-wrap input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 8px;
+    width: 100%;
+  }
+
+  .field-unit {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 8px;
+    border-left: 1px solid var(--border-dim);
+    white-space: nowrap;
+  }
+
+  /* AMOUNT PRESETS */
+  .amount-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .preset-btn {
+    background: transparent;
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 4px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(0,212,255,0.05);
+  }
+
+  /* LEVERAGE */
+  .leverage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .leverage-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .leverage-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border-dim);
+    outline: none;
+    border-radius: 0;
+  }
+
+  .leverage-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-primary);
+    cursor: pointer;
+    border-radius: 0;
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  }
+
+  .leverage-val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-primary);
+    font-weight: 700;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* EXECUTE BUTTON */
+  .exec-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .exec-btn.buy {
+    background: var(--accent-green);
+    color: #000;
+  }
+
+  .exec-btn.sell {
+    background: var(--accent-red);
+    color: #fff;
+  }
+
+  .exec-btn:hover {
+    filter: brightness(1.15);
+    transform: scaleY(1.02);
+  }
+
+  .exec-btn:active {
+    transform: scaleY(0.98);
+  }
+
+  /* ORDER SUMMARY */
+  .order-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .os-item {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    padding: 5px 8px;
+  }
+
+  .os-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .os-val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  /* ORDERBOOK */
+  .orderbook-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    margin-bottom: 4px;
+  }
+
+  .ob-col-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .ob-col-label:last-child { text-align: right; }
+  .ob-col-label:nth-child(2) { text-align: center; }
+
+  .ob-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 2px 0;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .ob-row:hover { background: rgba(255,255,255,0.03); }
+
+  .ob-bar {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    opacity: 0.07;
+  }
+
+  .ob-bar.ask { right: 0; background: var(--accent-red); }
+  .ob-bar.bid { right: 0; background: var(--accent-green); }
+
+  .ob-price { font-family: var(--font-mono); font-size: 11px; }
+  .ob-price.ask { color: var(--accent-red); }
+  .ob-price.bid { color: var(--accent-green); }
+
+  .ob-size {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  .ob-total {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .ob-spread {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-top: 1px solid var(--border-dim);
+    border-bottom: 1px solid var(--border-dim);
+    margin: 2px 0;
+  }
+
+  .ob-spread-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  .ob-spread-val {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-gold);
+  }
+
+  /* POSITIONS */
+  .position-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.05);
+  }
+
+  .pos-pair {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+  }
+
+  .pos-side {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 5px;
+    border: 1px solid;
+  }
+
+  .pos-side.long { color: var(--accent-green); border-color: rgba(0,255,136,0.3); }
+  .pos-side.short { color: var(--accent-red); border-color: rgba(255,51,85,0.3); }
+
+  .pos-pnl {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  /* BALANCE DISPLAY */
+  .balance-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .balance-amount {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 1px;
+  }
+
+  .balance-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .balance-change {
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  /* FOOTER */
+  #footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 28px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  .footer-text {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .footer-text span {
+    color: var(--accent-primary);
+  }
+
+  /* GLOW EFFECTS */
+  .glow-green { text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+  .glow-red { text-shadow: 0 0 10px rgba(255,51,85,0.5); }
+  .glow-cyan { text-shadow: 0 0 10px rgba(0,212,255,0.5); }
+
+  /* SCROLL */
+  #trade-panel { scrollbar-width: thin; scrollbar-color: var(--border-dim) transparent; }
+</style>
 </head>
 <body>
+<div id="app">
 
-<div class="header">
-    <div style="font-weight: 900; color: var(--gold); font-size: 24px;">A</div>
-    <div class="bal-box">
-        <span class="live-tag">● LIVE ACCOUNT</span>
-        <span id="acc-bal" class="bal-val">₹10,480.00</span>
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="14,2 26,26 2,26" stroke="#00d4ff" stroke-width="1.5" fill="none"/>
+          <polygon points="14,8 22,22 6,22" stroke="#00d4ff" stroke-width="0.8" fill="rgba(0,212,255,0.05)"/>
+          <line x1="14" y1="2" x2="14" y2="26" stroke="#00d4ff" stroke-width="0.5" opacity="0.4"/>
+          <line x1="2" y1="26" x2="26" y2="26" stroke="#00d4ff" stroke-width="0.5" opacity="0.4"/>
+          <circle cx="14" cy="2" r="1.5" fill="#00d4ff"/>
+          <circle cx="2" cy="26" r="1.5" fill="#00d4ff"/>
+          <circle cx="26" cy="26" r="1.5" fill="#00d4ff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name glow-cyan">THE ARCHITECT</div>
+        <div class="brand-sub">TRADING TERMINAL v4.2.1</div>
+      </div>
     </div>
-    <button onclick="openModal('dep-modal')" style="background:var(--green); border:none; padding:8px 15px; border-radius:5px; font-weight:bold; font-size:12px;">DEPOSIT</button>
-</div>
 
-<div class="market-nav">
-    <button class="m-btn active" id="btn-real" onclick="switchMarket('REAL')">REAL MARKET</button>
-    <button class="m-btn" id="btn-otc" onclick="switchMarket('OTC')">OTC MARKET</button>
-</div>
-
-<div id="chart-container"></div>
-
-<div class="trade-controls">
-    <div class="input-group">
-        <span class="input-label">INVESTMENT</span>
-        <span class="input-val">₹1,000</span>
+    <div class="ticker-strip" id="ticker-strip">
+      <!-- Populated by JS -->
     </div>
-    <div class="input-group">
-        <span class="input-label">PAYOUT</span>
-        <span class="input-val" style="color:var(--green)">+88%</span>
+
+    <div class="sys-status">
+      <div class="status-dot">
+        <div class="dot"></div>
+        LIVE
+      </div>
+      <div id="clock">--:--:--</div>
     </div>
-    <button class="btn-trade up" onclick="handleTrade('UP')">↑</button>
-    <button class="btn-trade down" onclick="handleTrade('DOWN')">↓</button>
-</div>
+  </div>
 
-<div id="dep-modal" class="modal">
-    <div class="modal-card">
-        <h3 style="color:var(--gold)">FAST DEPOSIT</h3>
-        <img src="https://i.ibb.co/6RTPv4n/1000006606.png" style="width:100%; border-radius:10px; margin-bottom:15px; background:white;">
-        <p style="font-size:12px; color:#707a8a;">UPI ID: 7251072316@ptaxis</p>
-        <button onclick="closeModals()" style="background:var(--gold); border:none; width:100%; padding:12px; border-radius:8px; font-weight:bold;">I HAVE PAID</button>
-    </div>
-</div>
+  <!-- MAIN AREA -->
+  <div id="main">
 
-<script>
-    let balance = 10480.00;
-    let marketType = 'REAL';
-    let currentPrice = 65000;
+    <!-- CHART AREA 70% -->
+    <div id="chart-area">
+      <div id="chart-header">
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div class="chart-pair">
+            <div class="pair-name">BTC/USDT</div>
+            <div class="pair-exchange">BINANCE</div>
+          </div>
+          <div class="price-main glow-cyan" id="main-price">$67,420.50</div>
+          <div class="price-stats">
+            <div class="pstat">
+              <div class="pstat-label">24H CHG</div>
+              <div class="pstat-val up" id="price-change">+2.34%</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-label">24H HIGH</div>
+              <div class="pstat-val" id="price-high">$68,150</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-label">24H LOW</div>
+              <div class="pstat-val" id="price-low">$65,800</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-label">VOLUME</div>
+              <div class="pstat-val">$2.4B</div>
+            </div>
+          </div>
+        </div>
+        <div class="timeframe-btns">
+          <button class="tf-btn" onclick="setTF(this,'1m')">1M</button>
+          <button class="tf-btn" onclick="setTF(this,'5m')">5M</button>
+          <button class="tf-btn" onclick="setTF(this,'15m')">15M</button>
+          <button class="tf-btn active" onclick="setTF(this,'1h')">1H</button>
+          <button class="tf-btn" onclick="setTF(this,'4h')">4H</button>
+          <button class="tf-btn" onclick="setTF(this,'1d')">1D</button>
+        </div>
+      </div>
 
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+      <div id="chart-container">
+        <div id="chart"></div>
+      </div>
 
-    // --- CHART ENGINE ---
-    const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-        layout: { backgroundColor: '#0b0e11', textColor: '#707a8a' },
-        grid: { vertLines: { color: '#1e222d' }, horzLines: { color: '#1e222d' } },
-        priceScale: { borderColor: '#2a2e39' },
-        timeScale: { borderColor: '#2a2e39', timeVisible: true, secondsVisible: true }
-    });
-    const candleSeries = chart.addCandlestickSeries({
-        upColor: '#00c853', downColor: '#ff3d00', borderVisible: false, wickUpColor: '#00c853', wickDownColor: '#ff3d00'
-    });
-
-    // Market Switching Logic
-    function switchMarket(type) {
-        marketType = type;
-        document.getElementById('btn-real').classList.toggle('active', type === 'REAL');
-        document.getElementById('btn-otc').classList.toggle('active', type === 'OTC');
-        alert(type + " Market Loaded Successfully");
-    }
-
-    // Live Feed (Binance + OTC Simulation)
-    const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
-    socket.onmessage = (e) => {
-        if(marketType === 'REAL') {
-            const k = JSON.parse(e.data).k;
-            currentPrice = parseFloat(k.c);
-            candleSeries.update({ time: k.t/1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: currentPrice });
-        }
-    };
-
-    setInterval(() => {
-        if(marketType === 'OTC') {
-            let change = (Math.random() - 0.5) * 10;
-            let lastPrice = currentPrice;
-            currentPrice += change;
-            candleSeries.update({ time: Math.floor(Date.now()/1000), open: lastPrice, high: Math.max(lastPrice, currentPrice)+2, low: Math.min(lastPrice, currentPrice)-2, close: currentPrice });
-        }
-    }, 1000);
-
-    // REAL BALANCE LOGIC
-    function handleTrade(dir) {
-        if(balance < 1000) return alert("Insufficient Balance!");
-        
-        balance -= 1000; // पैसा कट गया
-        updateUI();
-
-        setTimeout(() => {
-            // Winning Probability (Architect Algorithm)
-            let win = Math.random() > 0.7; 
-            if(win) {
-                balance += 1880; // पैसा बढ़ गया (Win)
-                alert("TRADE WON! ₹1,880 added to Live Account.");
-            } else {
-                alert("TRADE LOST! Better luck next time.");
-            }
-            updateUI();
-        }, 3000);
-    }
-
-    function updateUI() {
-        document.getElementById('acc-bal').innerText = "₹" + balance.toLocaleString('en-IN', {minimumFractionDigits: 2});
-    }
-</script>
-</body>
-</html>
+      <div id="indicators">
+        <div class="ind-chip">RSI(14): <span id="rsi-val">58.4</span></div>
+        <div class="ind-chip">MACD: <span id="macd-val">+124.5</span></div>
+        <div class="ind-chip">EMA(20): <span id="ema-val">$66,890</span></div>
+        <div class="ind-chip">BB: <span>$65,100 — $68,900</span></div>
+        <div class="ind-chip">VOL: <span class="up">▲ 34%</span></div>
+        <div class="ind-
