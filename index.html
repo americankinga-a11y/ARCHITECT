@@ -7,18 +7,23 @@
     <style>
         body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; line-height: 1.6; }
         h1 { border-bottom: 2px solid #0f0; padding-bottom: 10px; text-shadow: 0 0 10px #0f0; }
-        #output { margin-top: 20px; padding: 15px; border: 1px solid #333; border-radius: 5px; background: #050505; }
-        .alert-box { border-left: 5px solid; padding-left: 10px; margin: 10px 0; background: #111; }
-        h2 { color: #fff; margin: 0; }
-        h3 { color: #aaa; margin: 5px 0; }
+        #status-box { margin-bottom: 20px; padding: 15px; border: 1px solid #0f0; background: #050505; border-radius: 5px; }
+        #output { margin-top: 20px; }
+        .alert-box { border-left: 5px solid; padding: 10px; margin: 10px 0; background: #111; font-weight: bold; }
+        .price-display { font-size: 2rem; color: #fff; margin: 0; }
+        .score-display { font-size: 1.2rem; margin: 5px 0; }
     </style>
 </head>
 <body>
     <h1>ARCHITECT LIVE TERMINAL</h1>
-    <div id="status">Status: Connecting to Binance...</div>
-    <div id="output">
-        Waiting for first candle... (It takes 1 minute to close a candle)
+    
+    <div id="status-box">
+        <div id="connection-status">Status: Connecting to Binance...</div>
+        <div id="live-data">Waiting for stream...</div>
     </div>
+
+    <div id="output">
+        </div>
 
     <script type="module">
         // --- MODULE 1: INDICATOR LIBRARY ---
@@ -52,18 +57,9 @@
             return { upper: mean + stdDevMult * std, middle: mean, lower: mean - stdDevMult * std };
         }
 
-        function calcMACD(data, fast = 12, slow = 26, signal = 9) {
-            if (data.length < slow + signal) return null;
-            const fastEMA = calcEMA(data, fast);
-            const slowEMA = calcEMA(data, slow);
-            if (fastEMA === null || slowEMA === null) return null;
-            const macdLine = fastEMA - slowEMA;
-            return { line: macdLine, signal: null, histogram: 0 }; // Simplified for live
-        }
-
         // --- MODULE 2: SCORE AGGREGATOR ---
         function computeScore(prices) {
-            if (prices.length < 30) return null;
+            if (prices.length < 30) return 50; // Provide neutral score until buffer fills
             const price = prices[prices.length - 1];
             const rsi = calcRSI(prices, 14);
             const bb = calcBollingerBands(prices, 20, 2);
@@ -72,27 +68,26 @@
             if (rsi) weightedSum += (rsi - 50) / 50;
             if (bb) weightedSum += (price < bb.lower) ? 0.5 : (price > bb.upper) ? -0.5 : 0;
 
-            const score = Math.max(0, Math.min(100, Math.round(50 + weightedSum * 50)));
-            return { score, price, confluence: score >= 80 ? 'BULL' : score <= 20 ? 'BEAR' : 'NONE' };
+            return Math.max(0, Math.min(100, Math.round(50 + weightedSum * 50)));
         }
 
         // --- MODULE 3 & 4: CLASSES ---
         class AlertEngine {
-            constructor({ callThreshold = 80, putThreshold = 20, onAlert }) {
+            constructor({ callThreshold = 85, putThreshold = 15, onAlert }) {
                 this.callThreshold = callThreshold;
                 this.putThreshold = putThreshold;
                 this.onAlert = onAlert;
                 this._lastFired = null;
             }
-            evaluate(result) {
-                if (result.score >= this.callThreshold && this._lastFired !== 'CALL') {
+            evaluate(score, price) {
+                if (score >= this.callThreshold && this._lastFired !== 'CALL') {
                     this._lastFired = 'CALL';
-                    this.onAlert({ type: 'CALL', score: result.score });
-                } else if (result.score <= this.putThreshold && this._lastFired !== 'PUT') {
+                    this.onAlert({ type: 'CALL', score, price });
+                } else if (score <= this.putThreshold && this._lastFired !== 'PUT') {
                     this._lastFired = 'PUT';
-                    this.onAlert({ type: 'PUT', score: result.score });
-                } else if (result.score > 40 && result.score < 60) {
-                    this._lastFired = null; // Reset in neutral zone
+                    this.onAlert({ type: 'PUT', score, price });
+                } else if (score > 40 && score < 60) {
+                    this._lastFired = null; 
                 }
             }
         }
@@ -104,38 +99,54 @@
         }
 
         class BinanceFeed {
-            constructor(symbol, onCandle) {
+            constructor(symbol, onTick) {
                 this.symbol = symbol;
-                this.onCandle = onCandle;
+                this.onTick = onTick;
             }
             connect() {
                 const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${this.symbol}@kline_1m`);
-                ws.onopen = () => document.getElementById('status').innerText = "Status: Live & Connected";
+                ws.onopen = () => document.getElementById('connection-status').innerText = "Status: Live & Connected";
                 ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
-                    if (data.k.x) this.onCandle({ close: parseFloat(data.k.c) });
+                    // Real-time tick updates (data.k.c is current price)
+                    this.onTick(parseFloat(data.k.c));
+                };
+                ws.onclose = () => {
+                    document.getElementById('connection-status').innerText = "Status: Disconnected. Reconnecting...";
+                    setTimeout(() => this.connect(), 2000);
                 };
             }
         }
 
-        // --- WIRING: THE FINAL CONNECTION ---
+        // --- WIRING ---
+        const liveDataDiv = document.getElementById('live-data');
         const outputDiv = document.getElementById('output');
         const myBuffer = new CandleBuffer(300);
         
         const myAlerts = new AlertEngine({
             onAlert: (alert) => {
                 const color = alert.type === 'CALL' ? '#00ff00' : '#ff0000';
-                outputDiv.innerHTML += `<div class="alert-box" style="border-color:${color}">[${new Date().toLocaleTimeString()}] ALERT: ${alert.type} (Score: ${alert.score})</div>`;
+                const timestamp = new Date().toLocaleTimeString();
+                const alertHTML = `<div class="alert-box" style="border-color:${color}; color:${color}">
+                    [${timestamp}] SIGNAL: ${alert.type} | Price: $${alert.price} | Score: ${alert.score}
+                </div>`;
+                outputDiv.insertAdjacentHTML('afterbegin', alertHTML);
             }
         });
 
-        const myFeed = new BinanceFeed('btcusdt', (candle) => {
-            myBuffer.push(candle.close);
-            const result = computeScore(myBuffer.get());
-            if (result) {
-                outputDiv.innerHTML = `<h2>Live BTC: $${result.price}</h2><h3>Current Score: ${result.score}</h3>` + outputDiv.innerHTML;
-                myAlerts.evaluate(result);
-            }
+        const myFeed = new BinanceFeed('btcusdt', (currentPrice) => {
+            myBuffer.push(currentPrice);
+            const score = computeScore(myBuffer.get());
+            
+            // Update Top Display
+            liveDataDiv.innerHTML = `
+                <p class="price-display">BTC: $${currentPrice.toFixed(2)}</p>
+                <p class="score-display" style="color: ${score > 50 ? '#0f0' : '#f00'}">
+                    Strategy Score: ${score}
+                </p>
+            `;
+            
+            myAlerts.evaluate(score, currentPrice);
         });
 
         myFeed.connect();
