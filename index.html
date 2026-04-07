@@ -3,153 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Architect Terminal</title>
+    <title>Architect Pro Terminal</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; line-height: 1.6; }
-        h1 { border-bottom: 2px solid #0f0; padding-bottom: 10px; text-shadow: 0 0 10px #0f0; }
-        #status-box { margin-bottom: 20px; padding: 15px; border: 1px solid #0f0; background: #050505; border-radius: 5px; }
-        #output { margin-top: 20px; }
-        .alert-box { border-left: 5px solid; padding: 10px; margin: 10px 0; background: #111; font-weight: bold; }
-        .price-display { font-size: 2rem; color: #fff; margin: 0; }
-        .score-display { font-size: 1.2rem; margin: 5px 0; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 10px; margin: 0; }
+        #chart-container { width: 100%; height: 350px; border: 1px solid #333; margin-top: 10px; }
+        #status-box { padding: 15px; border: 1px solid #0f0; background: #050505; border-radius: 5px; margin-top: 10px; }
+        .price-display { font-size: 1.8rem; color: #fff; margin: 0; }
+        #output { margin-top: 15px; max-height: 200px; overflow-y: auto; }
+        .alert-box { border-left: 5px solid; padding: 10px; margin: 5px 0; background: #111; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>ARCHITECT LIVE TERMINAL</h1>
+    <h2 style="text-align:center; text-shadow: 0 0 10px #0f0;">ARCHITECT REAL-MARKET</h2>
     
+    <div id="chart-container"></div>
+
     <div id="status-box">
-        <div id="connection-status">Status: Connecting to Binance...</div>
-        <div id="live-data">Waiting for stream...</div>
+        <div id="live-data">
+            <p class="price-display">Connecting to Real Market...</p>
+            <p id="score-text">Strategy Score: --</p>
+        </div>
     </div>
 
-    <div id="output">
-        </div>
+    <div id="output"></div>
 
     <script type="module">
-        // --- MODULE 1: INDICATOR LIBRARY ---
-        function calcEMA(data, period) {
-            if (data.length < period) return null;
-            const k = 2 / (period + 1);
-            let val = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-            for (let i = period; i < data.length; i++) val = data[i] * k + val * (1 - k);
-            return val;
-        }
+        // --- 1. CHART SETUP ---
+        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            layout: { backgroundColor: '#000000', textColor: '#00ff00' },
+            grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+            timeScale: { timeVisible: true, secondsVisible: true },
+            priceScale: { borderColor: '#333' }
+        });
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#00ff00', downColor: '#ff0000', borderVisible: false, wickVisible: true
+        });
 
-        function calcRSI(data, period = 14) {
-            if (data.length < period + 1) return null;
-            const slice = data.slice(-(period + 1));
+        // --- 2. INDICATOR (RSI) ---
+        function calcRSI(prices, period = 14) {
+            if (prices.length < period + 1) return 50;
             let gains = 0, losses = 0;
-            for (let i = 1; i < slice.length; i++) {
-                const d = slice[i] - slice[i - 1];
-                if (d > 0) gains += d; else losses -= d;
+            for (let i = 1; i <= period; i++) {
+                const diff = prices[prices.length - i] - prices[prices.length - i - 1];
+                if (diff > 0) gains += diff; else losses -= diff;
             }
-            const avgGain = gains / period, avgLoss = losses / period;
-            if (avgLoss === 0) return 100;
-            return 100 - (100 / (1 + avgGain / avgLoss));
+            const rs = (gains / period) / (losses / period || 1);
+            return Math.round(100 - (100 / (1 + rs)));
         }
 
-        function calcBollingerBands(data, period = 20, stdDevMult = 2) {
-            if (data.length < period) return null;
-            const slice = data.slice(-period);
-            const mean = slice.reduce((a, b) => a + b, 0) / period;
-            const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
-            const std = Math.sqrt(variance);
-            return { upper: mean + stdDevMult * std, middle: mean, lower: mean - stdDevMult * std };
-        }
-
-        // --- MODULE 2: SCORE AGGREGATOR ---
-        function computeScore(prices) {
-            if (prices.length < 30) return 50; // Provide neutral score until buffer fills
-            const price = prices[prices.length - 1];
-            const rsi = calcRSI(prices, 14);
-            const bb = calcBollingerBands(prices, 20, 2);
-            
-            let weightedSum = 0;
-            if (rsi) weightedSum += (rsi - 50) / 50;
-            if (bb) weightedSum += (price < bb.lower) ? 0.5 : (price > bb.upper) ? -0.5 : 0;
-
-            return Math.max(0, Math.min(100, Math.round(50 + weightedSum * 50)));
-        }
-
-        // --- MODULE 3 & 4: CLASSES ---
-        class AlertEngine {
-            constructor({ callThreshold = 85, putThreshold = 15, onAlert }) {
-                this.callThreshold = callThreshold;
-                this.putThreshold = putThreshold;
-                this.onAlert = onAlert;
-                this._lastFired = null;
-            }
-            evaluate(score, price) {
-                if (score >= this.callThreshold && this._lastFired !== 'CALL') {
-                    this._lastFired = 'CALL';
-                    this.onAlert({ type: 'CALL', score, price });
-                } else if (score <= this.putThreshold && this._lastFired !== 'PUT') {
-                    this._lastFired = 'PUT';
-                    this.onAlert({ type: 'PUT', score, price });
-                } else if (score > 40 && score < 60) {
-                    this._lastFired = null; 
-                }
-            }
-        }
-
-        class CandleBuffer {
-            constructor(max = 300) { this.closes = []; this.max = max; }
-            push(c) { this.closes.push(c); if (this.closes.length > this.max) this.closes.shift(); }
-            get() { return this.closes; }
-        }
-
-        class BinanceFeed {
-            constructor(symbol, onTick) {
-                this.symbol = symbol;
-                this.onTick = onTick;
-            }
-            connect() {
-                const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${this.symbol}@kline_1m`);
-                ws.onopen = () => document.getElementById('connection-status').innerText = "Status: Live & Connected";
-                ws.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
-                    // Real-time tick updates (data.k.c is current price)
-                    this.onTick(parseFloat(data.k.c));
-                };
-                ws.onclose = () => {
-                    document.getElementById('connection-status').innerText = "Status: Disconnected. Reconnecting...";
-                    setTimeout(() => this.connect(), 2000);
-                };
-            }
-        }
-
-        // --- WIRING ---
-        const liveDataDiv = document.getElementById('live-data');
-        const outputDiv = document.getElementById('output');
-        const myBuffer = new CandleBuffer(300);
+        // --- 3. DATA FEED ---
+        const priceHistory = [];
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_1m`);
         
-        const myAlerts = new AlertEngine({
-            onAlert: (alert) => {
-                const color = alert.type === 'CALL' ? '#00ff00' : '#ff0000';
-                const timestamp = new Date().toLocaleTimeString();
-                const alertHTML = `<div class="alert-box" style="border-color:${color}; color:${color}">
-                    [${timestamp}] SIGNAL: ${alert.type} | Price: $${alert.price} | Score: ${alert.score}
-                </div>`;
-                outputDiv.insertAdjacentHTML('afterbegin', alertHTML);
-            }
-        });
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            const k = data.k;
+            const candle = {
+                time: k.t / 1000,
+                open: parseFloat(k.o),
+                high: parseFloat(k.h),
+                low: parseFloat(k.l),
+                close: parseFloat(k.c)
+            };
 
-        const myFeed = new BinanceFeed('btcusdt', (currentPrice) => {
-            myBuffer.push(currentPrice);
-            const score = computeScore(myBuffer.get());
+            // Update Real-time Chart
+            candleSeries.update(candle);
             
-            // Update Top Display
-            liveDataDiv.innerHTML = `
-                <p class="price-display">BTC: $${currentPrice.toFixed(2)}</p>
-                <p class="score-display" style="color: ${score > 50 ? '#0f0' : '#f00'}">
-                    Strategy Score: ${score}
-                </p>
-            `;
-            
-            myAlerts.evaluate(score, currentPrice);
-        });
+            // Update Dashboard
+            const currentPrice = candle.close;
+            priceHistory.push(currentPrice);
+            if(priceHistory.length > 50) priceHistory.shift();
 
-        myFeed.connect();
+            const score = calcRSI(priceHistory);
+            
+            document.querySelector('.price-display').innerText = `BTC: $${currentPrice.toFixed(2)}`;
+            const scoreEl = document.getElementById('score-text');
+            scoreEl.innerText = `Strategy Score: ${score}`;
+            scoreEl.style.color = score > 70 ? '#0f0' : score < 30 ? '#f00' : '#fff';
+
+            // Signal Logic (Optimized for Real Market)
+            if (score >= 80) sendAlert("CALL", score, currentPrice);
+            if (score <= 20) sendAlert("PUT", score, currentPrice);
+        };
+
+        function sendAlert(type, score, price) {
+            const output = document.getElementById('output');
+            const color = type === 'CALL' ? '#0f0' : '#f00';
+            const html = `<div class="alert-box" style="border-color:${color}; color:${color}">
+                [${new Date().toLocaleTimeString()}] ${type} SIGNAL | Price: $${price} | Score: ${score}
+            </div>`;
+            output.insertAdjacentHTML('afterbegin', html);
+        }
     </script>
 </body>
 </html>
