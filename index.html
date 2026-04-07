@@ -5,343 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Architect Terminal</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        h1 { border-bottom: 2px solid #0f0; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; line-height: 1.6; }
+        h1 { border-bottom: 2px solid #0f0; padding-bottom: 10px; text-shadow: 0 0 10px #0f0; }
+        #output { margin-top: 20px; padding: 15px; border: 1px solid #333; border-radius: 5px; background: #050505; }
+        .alert-box { border-left: 5px solid; padding-left: 10px; margin: 10px 0; background: #111; }
+        h2 { color: #fff; margin: 0; }
+        h3 { color: #aaa; margin: 5px 0; }
     </style>
 </head>
 <body>
     <h1>ARCHITECT LIVE TERMINAL</h1>
-    <div id="output">Waiting for Binance Feed...</div>
+    <div id="status">Status: Connecting to Binance...</div>
+    <div id="output">
+        Waiting for first candle... (It takes 1 minute to close a candle)
+    </div>
 
     <script type="module">
-      ────────────────────────────────────
-//  MODULE 1: INDICATOR LIBRARY
-//  Pure functions. Stateless. Input: number[]
-// ─────────────────────────────────────────────
-
-export function calcEMA(data, period) {
-  if (data.length < period) return null;
-  const k = 2 / (period + 1);
-  let val = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  for (let i = period; i < data.length; i++) val = data[i] * k + val * (1 - k);
-  return val;
-}
-
-export function calcRSI(data, period = 14) {
-  if (data.length < period + 1) return null;
-  const slice = data.slice(-(period + 1));
-  let gains = 0, losses = 0;
-  for (let i = 1; i < slice.length; i++) {
-    const d = slice[i] - slice[i - 1];
-    if (d > 0) gains += d; else losses -= d;
-  }
-  const avgGain = gains / period, avgLoss = losses / period;
-  if (avgLoss === 0) return 100;
-  return 100 - (100 / (1 + avgGain / avgLoss));
-}
-
-export function calcBollingerBands(data, period = 20, stdDevMult = 2) {
-  if (data.length < period) return null;
-  const slice = data.slice(-period);
-  const mean = slice.reduce((a, b) => a + b, 0) / period;
-  const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
-  const std = Math.sqrt(variance);
-  return {
-    upper:  mean + stdDevMult * std,
-    middle: mean,
-    lower:  mean - stdDevMult * std,
-    std,
-    // bandwidthPct: useful for volatility squeeze detection
-    bandwidthPct: (std * 2 * stdDevMult) / mean * 100
-  };
-}
-
-export function calcMACD(data, fast = 12, slow = 26, signal = 9) {
-  if (data.length < slow + signal) return null;
-  const fastEMA = calcEMA(data, fast);
-  const slowEMA = calcEMA(data, slow);
-  if (!fastEMA || !slowEMA) return null;
-  const macdLine = fastEMA - slowEMA;
-
-  // Build MACD line history to compute signal EMA over it
-  const macdHistory = [];
-  for (let i = slow; i < data.length; i++) {
-    const slice = data.slice(0, i + 1);
-    const f = calcEMA(slice, fast), s = calcEMA(slice, slow);
-    if (f && s) macdHistory.push(f - s);
-  }
-  const signalLine = calcEMA(macdHistory, signal);
-  return {
-    line:      macdLine,
-    signal:    signalLine,
-    histogram: signalLine !== null ? macdLine - signalLine : null
-  };
-}
-
-
-// ─────────────────────────────────────────────
-//  MODULE 2: SCORE AGGREGATOR
-//  Returns a 0-100 sentiment score + per-indicator
-//  directional votes and raw weighted contributions.
-// ─────────────────────────────────────────────
-
-const DEFAULT_WEIGHTS = { EMA: 25, RSI: 25, BB: 25, MACD: 25 };
-
-export function computeScore(prices, weights = DEFAULT_WEIGHTS, assetType = 'CRYPTO') {
-  if (prices.length < 30) return null; // not enough data yet
-
-  const price = prices[prices.length - 1];
-  const e9    = calcEMA(prices, 9);
-  const e21   = calcEMA(prices, 21);
-  const rsi   = calcRSI(prices, 14);
-  const bb    = calcBollingerBands(prices, 20, 2);
-  const macd  = calcMACD(prices, 12, 26, 9);
-
-  // Each raw value is normalized to [-1, +1]
-  // +1 = maximally bullish contribution, -1 = maximally bearish
-  let emaRaw = 0, rsiRaw = 0, bbRaw = 0, macdRaw = 0;
-  let emaDir = 0, rsiDir = 0, bbDir = 0, macdDir = 0;
-
-  // EMA crossover: spread as fraction of price, clamped
-  if (e9 && e21) {
-    const spread = (e9 - e21) / e21;
-    emaRaw = Math.max(-1, Math.min(1, spread * 200));
-    emaDir = emaRaw >  0.05 ?  1
-           : emaRaw < -0.05 ? -1 : 0;
-  }
-
-  // RSI: oversold (< 35) is bullish setup, overbought (> 65) is bearish
-  if (rsi !== null) {
-    rsiRaw = (rsi - 50) / 50; // maps [0,100] → [-1,+1]
-    rsiDir = rsi < 35 ?  1    // oversold → bullish
-           : rsi > 65 ? -1    // overbought → bearish
-           : 0;
-  }
-
-  // Bollinger Band position: price near lower band is bullish setup
-  if (bb) {
-    const range = bb.upper - bb.lower;
-    const pos   = range > 0 ? (price - bb.lower) / range : 0.5; // 0=lower, 1=upper
-    bbRaw = (pos - 0.5) * 2; // maps [0,1] → [-1,+1], lower=+1
-    bbDir = pos < 0.25 ?  1  // near lower band → bullish
-          : pos > 0.75 ? -1  // near upper band → bearish
-          : 0;
-  }
-
-  // MACD histogram: positive = bullish momentum building
-  if (macd && macd.histogram !== null) {
-    // Scale varies per asset class — normalise by typical histogram magnitude
-    const scale = assetType === 'FOREX' ? 5000 : 0.05;
-    macdRaw = Math.max(-1, Math.min(1, macd.histogram * scale));
-    macdDir = macdRaw >  0.05 ?  1
-            : macdRaw < -0.05 ? -1 : 0;
-  }
-
-  const totalWeight = weights.EMA + weights.RSI + weights.BB + weights.MACD;
-  const weightedSum =
-    (emaRaw  * weights.EMA  +
-     rsiRaw  * weights.RSI  +
-     bbRaw   * weights.BB   +
-     macdRaw * weights.MACD) / totalWeight;
-
-  const score = Math.max(0, Math.min(100, Math.round(50 + weightedSum * 50)));
-
-  const bullCount = [emaDir, rsiDir, bbDir, macdDir].filter(d => d ===  1).length;
-  const bearCount = [emaDir, rsiDir, bbDir, macdDir].filter(d => d === -1).length;
-
-  return {
-    score,
-    price, e9, e21, rsi, bb, macd,
-    dirs:       { ema: emaDir, rsi: rsiDir, bb: bbDir, macd: macdDir },
-    raws:       { ema: emaRaw, rsi: rsiRaw, bb: bbRaw, macd: macdRaw },
-    confluence: bullCount === 4 ? 'BULL' : bearCount === 4 ? 'BEAR' : 'NONE',
-    bullCount,  bearCount
-  };
-}
-
-
-// ─────────────────────────────────────────────
-//  MODULE 3: ALERT ENGINE
-//  Fires "CALL" or "PUT" only on full confluence.
-//  Debounced — won't re-fire until score resets.
-// ─────────────────────────────────────────────
-
-export class AlertEngine {
-  constructor({ callThreshold = 90, putThreshold = 10, onAlert, onReset } = {}) {
-    this.callThreshold = callThreshold;
-    this.putThreshold  = putThreshold;
-    this.onAlert       = onAlert  || (() => {});
-    this.onReset       = onReset  || (() => {});
-    this._lastFired    = null;     // 'CALL' | 'PUT' | null
-    this._alertCount   = 0;
-  }
-
-  evaluate(result) {
-    if (!result) return;
-    const { score, confluence } = result;
-    const resetZone = score > this.putThreshold + 10 && score < this.callThreshold - 10;
-
-    // Reset latch when score returns to neutral zone
-    if (resetZone && this._lastFired !== null) {
-      this._lastFired = null;
-      this.onReset({ score });
-    }
-
-    // CALL: score above threshold AND all four indicators bullish
-    if (score >= this.callThreshold && confluence === 'BULL' && this._lastFired !== 'CALL') {
-      this._alertCount++;
-      this._lastFired = 'CALL';
-      this.onAlert({
-        type:       'CALL',
-        score,
-        confluence,
-        alertId:    this._alertCount,
-        timestamp:  new Date().toISOString(),
-        indicators: result.dirs
-      });
-    }
-
-    // PUT: score below threshold AND all four indicators bearish
-    if (score <= this.putThreshold && confluence === 'BEAR' && this._lastFired !== 'PUT') {
-      this._alertCount++;
-      this._lastFired = 'PUT';
-      this.onAlert({
-        type:       'PUT',
-        score,
-        confluence,
-        alertId:    this._alertCount,
-        timestamp:  new Date().toISOString(),
-        indicators: result.dirs
-      });
-    }
-  }
-
-  setThresholds(call, put) {
-    this.callThreshold = call;
-    this.putThreshold  = put;
-  }
-}
-
-
-// ─────────────────────────────────────────────
-//  MODULE 4: CANDLE BUFFER
-//  Rolling window. Feed raw ticks or OHLCV candles.
-// ─────────────────────────────────────────────
-
-export class CandleBuffer {
-  constructor(maxLength = 300) {
-    this.closes    = [];
-    this.maxLength = maxLength;
-  }
-
-  // Feed a close price directly (from tick data)
-  pushClose(close) {
-    this.closes.push(close);
-    if (this.closes.length > this.maxLength) this.closes.shift();
-  }
-
-  // Feed a full OHLCV candle object { open, high, low, close, volume }
-  pushCandle(candle) {
-    this.pushClose(candle.close);
-  }
-
-  get() { return this.closes; }
-  get length() { return this.closes.length; }
-  clear() { this.closes = []; }
-}
-
-
-// ─────────────────────────────────────────────
-//  MODULE 5: BINANCE WEBSOCKET ADAPTER
-//  Drop-in feed for live data. Swap URL for
-//  other providers (OANDA uses similar WS format).
-// ─────────────────────────────────────────────
-
-export class BinanceFeed {
-  constructor({ symbol = 'btcusdt', interval = '1m', onCandle, onError } = {}) {
-    this.symbol    = symbol.toLowerCase();
-    this.interval  = interval;
-    this.onCandle  = onCandle || (() => {});
-    this.onError   = onError  || console.error;
-    this.ws        = null;
-    this._reconnectDelay = 2000;
-  }
-
-  connect() {
-    const url = `wss://stream.binance.com:9443/ws/${this.symbol}@kline_${this.interval}`;
-    this.ws = new WebSocket(url);
-
-    this.ws.onopen    = () => console.log(`[BinanceFeed] Connected: ${this.symbol} ${this.interval}`);
-    this.ws.onmessage = (evt) => this._handleMessage(evt);
-    this.ws.onerror   = (err) => this.onError(err);
-    this.ws.onclose   = ()    => {
-      console.warn('[BinanceFeed] Disconnected. Reconnecting...');
-      setTimeout(() => this.connect(), this._reconnectDelay);
-    };
-  }
-
-  _handleMessage(evt) {
-    try {
-      const msg   = JSON.parse(evt.data);
-      const k     = msg.k; // kline object
-      // Only emit on candle CLOSE to avoid repainting
-      if (!k.x) return; // k.x = isFinal (candle closed)
-      this.onCandle({
-        open:      parseFloat(k.o),
-        high:      parseFloat(k.h),
-        low:       parseFloat(k.l),
-        close:     parseFloat(k.c),
-        volume:    parseFloat(k.v),
-        openTime:  k.t,
-        closeTime: k.T
-      });
-    } catch (e) {
-      this.onError(e);
-    }
-  }
-
-  disconnect() {
-    if (this.ws) { this.ws.onclose = null; this.ws.close(); this.ws = null; }
-  }
-}
-
-
-// ─────────────────────────────────────────────
-//  WIRING EXAMPLE: connect all modules together
-// ────────────────────────────────────────────    ... (ऊपर का इंडिकेटर कोड) ...
-}
-
-// --- WIRING EXAMPLE: Connect everything together ---
-const output = document.getElementById('output');
-const buffer = new CandleBuffer(300); 
-
-const alerts = new AlertEngine({
-    callThreshold: 90,
-    putThreshold: 10,
-    onAlert: (alert) => {
-        const color = alert.type === 'CALL' ? '#00ff00' : '#ff0000';
-        output.innerHTML += `<div style="color: ${color}">[${new Date().toLocaleTimeString()}] ALERT: ${alert.type} (Score: ${alert.score})</div>`;
-    },
-    onReset: ({ score }) => {
-        output.innerHTML += `<div style="color: #888">[${new Date().toLocaleTimeString()}] RESET: Score returned to ${score}</div>`;
-    }
-});
-
-const feed = new BinanceFeed({
-    symbol: 'btcusdt',
-    interval: '1m',
-    onCandle: (candle) => {
-        buffer.pushCandle(candle);
-        const result = computeScore(buffer.get());
-        if (result) {
-            output.innerHTML = `<h2>Live BTC: $${candle.close}</h2> <h3>Score: ${result.score}</h3>`;
-            alerts.evaluate(result);
+        // --- MODULE 1: INDICATOR LIBRARY ---
+        function calcEMA(data, period) {
+            if (data.length < period) return null;
+            const k = 2 / (period + 1);
+            let val = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+            for (let i = period; i < data.length; i++) val = data[i] * k + val * (1 - k);
+            return val;
         }
-    }
-});
 
-feed.connect();
+        function calcRSI(data, period = 14) {
+            if (data.length < period + 1) return null;
+            const slice = data.slice(-(period + 1));
+            let gains = 0, losses = 0;
+            for (let i = 1; i < slice.length; i++) {
+                const d = slice[i] - slice[i - 1];
+                if (d > 0) gains += d; else losses -= d;
+            }
+            const avgGain = gains / period, avgLoss = losses / period;
+            if (avgLoss === 0) return 100;
+            return 100 - (100 / (1 + avgGain / avgLoss));
+        }
 
-</script>
+        function calcBollingerBands(data, period = 20, stdDevMult = 2) {
+            if (data.length < period) return null;
+            const slice = data.slice(-period);
+            const mean = slice.reduce((a, b) => a + b, 0) / period;
+            const variance = slice.reduce((a, b) => a + (b - mean) ** 2, 0) / period;
+            const std = Math.sqrt(variance);
+            return { upper: mean + stdDevMult * std, middle: mean, lower: mean - stdDevMult * std };
+        }
+
+        function calcMACD(data, fast = 12, slow = 26, signal = 9) {
+            if (data.length < slow + signal) return null;
+            const fastEMA = calcEMA(data, fast);
+            const slowEMA = calcEMA(data, slow);
+            if (fastEMA === null || slowEMA === null) return null;
+            const macdLine = fastEMA - slowEMA;
+            return { line: macdLine, signal: null, histogram: 0 }; // Simplified for live
+        }
+
+        // --- MODULE 2: SCORE AGGREGATOR ---
+        function computeScore(prices) {
+            if (prices.length < 30) return null;
+            const price = prices[prices.length - 1];
+            const rsi = calcRSI(prices, 14);
+            const bb = calcBollingerBands(prices, 20, 2);
+            
+            let weightedSum = 0;
+            if (rsi) weightedSum += (rsi - 50) / 50;
+            if (bb) weightedSum += (price < bb.lower) ? 0.5 : (price > bb.upper) ? -0.5 : 0;
+
+            const score = Math.max(0, Math.min(100, Math.round(50 + weightedSum * 50)));
+            return { score, price, confluence: score >= 80 ? 'BULL' : score <= 20 ? 'BEAR' : 'NONE' };
+        }
+
+        // --- MODULE 3 & 4: CLASSES ---
+        class AlertEngine {
+            constructor({ callThreshold = 80, putThreshold = 20, onAlert }) {
+                this.callThreshold = callThreshold;
+                this.putThreshold = putThreshold;
+                this.onAlert = onAlert;
+                this._lastFired = null;
+            }
+            evaluate(result) {
+                if (result.score >= this.callThreshold && this._lastFired !== 'CALL') {
+                    this._lastFired = 'CALL';
+                    this.onAlert({ type: 'CALL', score: result.score });
+                } else if (result.score <= this.putThreshold && this._lastFired !== 'PUT') {
+                    this._lastFired = 'PUT';
+                    this.onAlert({ type: 'PUT', score: result.score });
+                } else if (result.score > 40 && result.score < 60) {
+                    this._lastFired = null; // Reset in neutral zone
+                }
+            }
+        }
+
+        class CandleBuffer {
+            constructor(max = 300) { this.closes = []; this.max = max; }
+            push(c) { this.closes.push(c); if (this.closes.length > this.max) this.closes.shift(); }
+            get() { return this.closes; }
+        }
+
+        class BinanceFeed {
+            constructor(symbol, onCandle) {
+                this.symbol = symbol;
+                this.onCandle = onCandle;
+            }
+            connect() {
+                const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${this.symbol}@kline_1m`);
+                ws.onopen = () => document.getElementById('status').innerText = "Status: Live & Connected";
+                ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    if (data.k.x) this.onCandle({ close: parseFloat(data.k.c) });
+                };
+            }
+        }
+
+        // --- WIRING: THE FINAL CONNECTION ---
+        const outputDiv = document.getElementById('output');
+        const myBuffer = new CandleBuffer(300);
+        
+        const myAlerts = new AlertEngine({
+            onAlert: (alert) => {
+                const color = alert.type === 'CALL' ? '#00ff00' : '#ff0000';
+                outputDiv.innerHTML += `<div class="alert-box" style="border-color:${color}">[${new Date().toLocaleTimeString()}] ALERT: ${alert.type} (Score: ${alert.score})</div>`;
+            }
+        });
+
+        const myFeed = new BinanceFeed('btcusdt', (candle) => {
+            myBuffer.push(candle.close);
+            const result = computeScore(myBuffer.get());
+            if (result) {
+                outputDiv.innerHTML = `<h2>Live BTC: $${result.price}</h2><h3>Current Score: ${result.score}</h3>` + outputDiv.innerHTML;
+                myAlerts.evaluate(result);
+            }
+        });
+
+        myFeed.connect();
+    </script>
 </body>
 </html>
