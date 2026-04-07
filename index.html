@@ -1,4 +1,4 @@
-//─────<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -308,38 +308,40 @@ export class BinanceFeed {
 
 // ─────────────────────────────────────────────
 //  WIRING EXAMPLE: connect all modules together
-// ─────────────────────────────────────────────
+// ────────────────────────────────────────────    ... (ऊपर का इंडिकेटर कोड) ...
+}
 
-/*
-  import { CandleBuffer, BinanceFeed, computeScore, AlertEngine } from './signalEngine.js';
+// --- WIRING EXAMPLE: Connect everything together ---
+const output = document.getElementById('output');
+const buffer = new CandleBuffer(300); 
 
-  const buffer = new CandleBuffer(300);
-
-  const alerts = new AlertEngine({
+const alerts = new AlertEngine({
     callThreshold: 90,
-    putThreshold:  10,
+    putThreshold: 10,
     onAlert: (alert) => {
-      // Your UI handler — update the dashboard here
-      console.log(`[ALERT] ${alert.type} | score=${alert.score} | id=${alert.alertId}`);
-      dispatchEvent(new CustomEvent('signal-alert', { detail: alert }));
+        const color = alert.type === 'CALL' ? '#00ff00' : '#ff0000';
+        output.innerHTML += `<div style="color: ${color}">[${new Date().toLocaleTimeString()}] ALERT: ${alert.type} (Score: ${alert.score})</div>`;
     },
     onReset: ({ score }) => {
-      console.log(`[RESET] Score returned to neutral: ${score}`);
+        output.innerHTML += `<div style="color: #888">[${new Date().toLocaleTimeString()}] RESET: Score returned to ${score}</div>`;
     }
-  });
+});
 
-  const feed = new BinanceFeed({
-    symbol:   'btcusdt',
+const feed = new BinanceFeed({
+    symbol: 'btcusdt',
     interval: '1m',
     onCandle: (candle) => {
-      buffer.pushCandle(candle);
-      const result = computeScore(buffer.get(), { EMA: 25, RSI: 25, BB: 25, MACD: 25 }, 'CRYPTO');
-      if (result) alerts.evaluate(result);
+        buffer.pushCandle(candle);
+        const result = computeScore(buffer.get());
+        if (result) {
+            output.innerHTML = `<h2>Live BTC: $${candle.close}</h2> <h3>Score: ${result.score}</h3>`;
+            alerts.evaluate(result);
+        }
     }
-  });
+});
 
-  feed.connect(); कैसा प्रोग्राम 
-*/ 
-    </script>
+feed.connect();
+
+</script>
 </body>
 </html>
