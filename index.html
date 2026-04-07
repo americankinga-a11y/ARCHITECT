@@ -1,113 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Architect | Global Terminal</title>
-    <script src="https://s3.tradingview.com/tv.js"></script>
+    <title>THE ARCHITECT - Real Market Trading</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
-        :root {
-            --neon-blue: #00d2ff;
-            --dark-bg: #050a0e;
-            --panel-bg: #0e161c;
-        }
-        body { margin: 0; background-color: var(--dark-bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; }
-        
-        /* Header Section */
-        .header { height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid #1a262f; background: var(--panel-bg); }
-        .logo { font-size: 24px; font-weight: bold; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
-        .live-status { color: #00ff88; font-size: 12px; animation: blink 1.5s infinite; }
-        
-        /* Layout Grid */
-        .main-container { display: grid; grid-template-columns: 250px 1fr 300px; height: calc(100vh - 60px); }
-        
-        /* Sidebar: Market List */
-        .sidebar { background: var(--panel-bg); border-right: 1px solid #1a262f; padding: 10px; overflow-y: auto; }
-        .market-item { padding: 12px; margin-bottom: 5px; border-radius: 5px; cursor: pointer; transition: 0.3s; display: flex; justify-content: space-between; font-size: 14px; border: 1px solid transparent; }
-        .market-item:hover { background: #1a262f; border-color: var(--neon-blue); }
-        
-        /* Chart Section */
-        #tradingview_chart { flex-grow: 1; border-right: 1px solid #1a262f; }
-        
-        /* Execution Panel (Right) */
-        .execution-panel { background: var(--panel-bg); padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        input { background: #1a262f; border: 1px solid #2a3b47; color: white; padding: 12px; border-radius: 5px; outline: none; }
-        .btn-up { background: #00c853; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 18px; }
-        .btn-down { background: #ff3d00; color: white; border: none; padding: 15px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 18px; }
-        
-        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.3;} 100% {opacity: 1;} }
+        body { background-color: #0b0e11; color: white; margin: 0; font-family: sans-serif; }
+        #chart-container { width: 100%; height: 500px; position: relative; }
+        .trading-panel { position: absolute; right: 20px; top: 100px; background: rgba(20, 26, 32, 0.9); padding: 20px; border-radius: 8px; border: 1px solid #333; z-index: 10; }
+        .btn { padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
+        .btn-up { background: #00ff55; color: black; }
+        .btn-down { background: #ff3333; color: white; }
+        #price-display { font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">THE ARCHITECT <span style="font-size: 12px; color: #555;">v5.0</span></div>
-        <div class="live-status">● GLOBAL MARKET LIVE</div>
-        <div id="price-ticker" style="font-family: monospace; font-size: 18px; color: var(--neon-blue);">BTC/USDT: $...</div>
-    </div>
-
-    <div class="main-container">
-        <div class="sidebar">
-            <h3 style="font-size: 12px; color: #555;">GLOBAL ASSETS</h3>
-            <div class="market-item" onclick="changeMarket('BTCUSDT')"><span>BTC/USDT</span> <span style="color:#00ff88;">+2.4%</span></div>
-            <div class="market-item" onclick="changeMarket('EURUSD')"><span>EUR/USD</span> <span style="color:#ff3d00;">-0.1%</span></div>
-            <div class="market-item" onclick="changeMarket('XAUUSD')"><span>GOLD/USD</span> <span style="color:#00ff88;">+0.8%</span></div>
-            <div class="market-item" onclick="changeMarket('ETHUSDT')"><span>ETH/USDT</span> <span style="color:#00ff88;">+1.2%</span></div>
-        </div>
-
-        <div id="tradingview_chart"></div>
-
-        <div class="execution-panel">
-            <div class="input-group">
-                <label>Investment ($)</label>
-                <input type="number" value="10" id="amount">
-            </div>
-            <div class="input-group">
-                <label>Expiry (Min)</label>
-                <input type="number" value="1" id="time">
-            </div>
-            <button class="btn-up">↑ BUY (CALL)</button>
-            <button class="btn-down">↓ SELL (PUT)</button>
-            <hr style="border: 0.5px solid #1a262f; width: 100%;">
-            <div style="font-size: 12px; color: #888; text-align: center;">YOUR VIP STATUS: <span style="color: gold;">GOLD</span></div>
+    <h2 style="padding: 10px;">THE ARCHITECT <span style="color: #00ff55; font-size: 14px;">● GLOBAL MARKET LIVE</span></h2>
+    
+    <div id="chart-container">
+        <div class="trading-panel">
+            <div id="price-display">Loading...</div>
+            <input type="number" id="amount" value="10" style="width: 80%; padding: 10px; margin-bottom: 10px; background: #1f2226; border: 1px solid #444; color: white;">
+            <button class="btn btn-up" onclick="placeTrade('UP')">↑ BUY (CALL)</button>
+            <button class="btn btn-down" onclick="placeTrade('DOWN')">↓ SELL (PUT)</button>
+            <div style="font-size: 12px; color: gold; text-align: center;">VIP STATUS: GOLD</div>
         </div>
     </div>
 
     <script>
-        let currentSymbol = "BINANCE:BTCUSDT";
+        // 1. चार्ट सेटिंग्स (Quotex स्टाइल)
+        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            layout: { backgroundColor: '#0b0e11', textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#1f2226' }, horzLines: { color: '#1f2226' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            priceScale: { borderColor: '#485c7b' },
+            timeScale: { borderColor: '#485c7b', timeVisible: true, secondsVisible: true }
+        });
 
-        function loadChart(symbol) {
-            new TradingView.widget({
-                "width": "100%",
-                "height": "100%",
-                "symbol": symbol,
-                "interval": "1",
-                "timezone": "Etc/UTC",
-                "theme": "dark",
-                "style": "1",
-                "locale": "en",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "container_id": "tradingview_chart"
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#00ff55', downColor: '#ff3333', borderVisible: false,
+            wickUpColor: '#00ff55', wickDownColor: '#ff3333'
+        });
+
+        // 2. Real Market WebSocket (Binance से लाइव डेटा)
+        const binanceSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1s');
+
+        binanceSocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            const k = msg.k;
+            const livePrice = parseFloat(k.c).toFixed(2);
+            
+            document.getElementById('price-display').innerText = `BTC/USDT: $${livePrice}`;
+
+            // कैंडल अपडेट करें
+            candleSeries.update({
+                time: k.t / 1000,
+                open: parseFloat(k.o),
+                high: parseFloat(k.h),
+                low: parseFloat(k.l),
+                close: parseFloat(k.c)
             });
+        };
+
+        // 3. ट्रेडिंग लॉजिक (Binary Mechanism)
+        function placeTrade(dir) {
+            const entryPrice = parseFloat(document.getElementById('price-display').innerText.split('$')[1]);
+            alert(`Trade Placed: ${dir} at ${entryPrice}. Waiting for 60s...`);
+            
+            // यहाँ आपका AI Tool बैकएंड को डेटा भेजेगा
         }
-
-        function changeMarket(pair) {
-            let symbol = pair.includes('USD') && !pair.includes('USDT') ? "FX_IDC:"+pair : "BINANCE:"+pair;
-            loadChart(symbol);
-        }
-
-        // Initial Load
-        loadChart(currentSymbol);
-
-        // Real-time Price Ticker (Mock for UI)
-        setInterval(() => {
-            let price = (67400 + Math.random() * 10).toFixed(2);
-            document.getElementById('price-ticker').innerText = `BTC/USDT: $${price}`;
-        }, 1000);
     </script>
 </body>
 </html>
