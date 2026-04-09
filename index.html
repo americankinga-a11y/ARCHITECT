@@ -8,16 +8,17 @@
   <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
 
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      background: black;
+      background: #000;
       color: #00ff00;
-      font-family: Courier New, monospace;
-      margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       overflow: hidden;
     }
 
     header {
+      height: 55px;
       padding: 10px 15px;
       border-bottom: 1px solid #111;
       display: flex;
@@ -28,12 +29,14 @@
 
     header h2 {
       margin: 0;
-      font-size: 18px;
+      font-size: 16px;
+      color: #00ff00;
       text-shadow: 0 0 10px #00ff00;
+      letter-spacing: 1px;
     }
 
     .vip-badge {
-      padding: 6px 10px;
+      padding: 7px 12px;
       border: 1px solid gold;
       color: gold;
       border-radius: 8px;
@@ -44,87 +47,102 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 1fr 320px;
+      grid-template-columns: 1fr 340px;
       height: calc(100vh - 55px);
     }
 
     #chart-container {
       width: 100%;
       height: 100%;
-      border-right: 1px solid #111;
+      background: #000;
+      position: relative;
     }
 
-    .panel {
-      padding: 12px;
-      background: #040404;
-      overflow-y: auto;
-    }
-
-    .box {
-      border: 1px solid #00ff00;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      background: #070707;
-    }
-
-    .price-display {
-      font-size: 1.4rem;
-      color: white;
-      margin: 0;
-    }
-
-    .muted {
-      color: #aaa;
-      font-size: 12px;
-    }
-
-    .btn-row {
+    /* Bottom trade bar like Quotex */
+    .trade-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.95);
+      border-top: 1px solid #111;
+      padding: 10px;
       display: flex;
       gap: 10px;
-      margin-top: 10px;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    button {
+    .trade-bar input, .trade-bar select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #222;
+      background: #000;
+      color: #fff;
+      width: 110px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .trade-btn {
       flex: 1;
       padding: 14px;
       border: none;
       border-radius: 10px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 16px;
     }
 
     .call-btn {
       background: #00ff00;
-      color: black;
+      color: #000;
       box-shadow: 0 0 10px #00ff00;
     }
 
     .put-btn {
       background: #ff0000;
-      color: white;
+      color: #fff;
       box-shadow: 0 0 10px #ff0000;
     }
 
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border-radius: 8px;
+    /* Right Panel */
+    .panel {
+      background: #050505;
+      border-left: 1px solid #111;
+      padding: 12px;
+      overflow-y: auto;
+    }
+
+    .box {
       border: 1px solid #222;
-      background: black;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #0a0a0a;
+    }
+
+    .price-display {
+      font-size: 20px;
       color: white;
-      font-family: Courier New, monospace;
+      margin: 0;
+      font-weight: bold;
+    }
+
+    .muted {
+      color: #aaa;
+      font-size: 12px;
+      margin-top: 4px;
     }
 
     #output {
-      max-height: 220px;
+      max-height: 200px;
       overflow-y: auto;
       border: 1px solid #222;
       padding: 10px;
       border-radius: 10px;
       background: #070707;
+      font-size: 12px;
     }
 
     .alert-box {
@@ -143,28 +161,52 @@
       margin-top: 10px;
       background: #0b0b0b;
       font-size: 13px;
+      color: white;
     }
 
-    .win {
-      color: #00ff00;
+    .trade-box div {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #111;
     }
 
-    .loss {
-      color: #ff0000;
+    .trade-box div:last-child {
+      border-bottom: none;
     }
 
     .leaderboard div {
       display: flex;
       justify-content: space-between;
-      padding: 5px 0;
+      padding: 6px 0;
       border-bottom: 1px solid #111;
       font-size: 12px;
+      color: white;
     }
 
-    .footer-note {
-      font-size: 11px;
-      color: #777;
+    .leaderboard div:last-child {
+      border-bottom: none;
+    }
+
+    .tournament-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: gold;
+      font-weight: bold;
+      cursor: pointer;
       margin-top: 8px;
+    }
+
+    /* Mobile Responsive */
+    @media(max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .panel {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -177,65 +219,83 @@
 </header>
 
 <div class="layout">
-  <div id="chart-container"></div>
 
+  <!-- Chart Section -->
+  <div id="chart-container">
+
+    <!-- Quotex Style Bottom Bar -->
+    <div class="trade-bar">
+      <input id="amount" type="number" value="10" min="1" />
+
+      <select id="expiry">
+        <option value="1">1m</option>
+        <option value="3">3m</option>
+        <option value="5">5m</option>
+      </select>
+
+      <button class="trade-btn call-btn" onclick="placeTrade('CALL')">CALL</button>
+      <button class="trade-btn put-btn" onclick="placeTrade('PUT')">PUT</button>
+    </div>
+  </div>
+
+  <!-- Side Panel -->
   <div class="panel">
 
     <div class="box">
       <p class="price-display" id="price">Loading...</p>
-      <p id="score-text">RSI Score: --</p>
-      <p id="connection">Status: Connecting...</p>
+      <p id="score-text" class="muted">RSI Score: --</p>
+      <p id="connection" class="muted">Status: Connecting...</p>
       <p class="muted" id="timer">Next Candle Close: --</p>
     </div>
 
     <div class="box">
-      <b>Trade Panel (Demo Tournament)</b>
-
-      <label class="muted">Trade Amount ($)</label>
-      <input id="amount" type="number" value="10" min="1"/>
-
-      <label class="muted">Expiry Time</label>
-      <select id="expiry">
-        <option value="1">1 Minute</option>
-        <option value="3">3 Minutes</option>
-        <option value="5">5 Minutes</option>
-      </select>
-
-      <div class="btn-row">
-        <button class="call-btn" onclick="placeTrade('CALL')">CALL</button>
-        <button class="put-btn" onclick="placeTrade('PUT')">PUT</button>
-      </div>
+      <b style="color:white;">Account & Trading</b>
 
       <div class="trade-box">
         <div><b>Balance:</b> <span id="balance">$1000</span></div>
         <div><b>Open Trades:</b> <span id="openTrades">0</span></div>
         <div><b>Profit Today:</b> <span id="profitToday">$0</span></div>
+        <div><b>Payout:</b> <span id="payout">80%</span></div>
       </div>
 
-      <div class="footer-note">
-        ⚠️ Demo Mode: Tournament system ready. Real-money trading needs legal broker integration.
-      </div>
+      <button class="tournament-btn" onclick="joinTournament()">🏆 Join Tournament</button>
+      <p class="muted" id="tournamentStatus">Tournament: Not Joined</p>
     </div>
 
     <div class="box">
-      <b>Live Signals</b>
+      <b style="color:white;">Live Signals & Trades</b>
       <div id="output"></div>
     </div>
 
     <div class="box">
-      <b>🏆 Tournament Leaderboard (Demo)</b>
+      <b style="color:white;">🏆 Tournament Leaderboard</b>
       <div class="leaderboard" id="leaderboard"></div>
     </div>
 
   </div>
+
 </div>
 
 <script>
+  // -----------------------------
+  // FIXED CHART RENDER ISSUE
+  // -----------------------------
   const chartContainer = document.getElementById("chart-container");
 
-  const chart = LightweightCharts.createChart(chartContainer, {
-    width: chartContainer.clientWidth,
-    height: chartContainer.clientHeight,
+  // IMPORTANT: create a chart div (because sometimes GitHub Pages has sizing issues)
+  const chartDiv = document.createElement("div");
+  chartDiv.style.width = "100%";
+  chartDiv.style.height = "100%";
+  chartDiv.style.position = "absolute";
+  chartDiv.style.top = "0";
+  chartDiv.style.left = "0";
+  chartDiv.style.bottom = "60px"; // space for trade bar
+  chartDiv.style.right = "0";
+  chartContainer.appendChild(chartDiv);
+
+  const chart = LightweightCharts.createChart(chartDiv, {
+    width: chartDiv.clientWidth,
+    height: chartDiv.clientHeight,
     layout: {
       background: { color: "#000000" },
       textColor: "#00ff00",
@@ -247,7 +307,11 @@
     timeScale: {
       timeVisible: true,
       secondsVisible: false,
+      borderColor: "#111"
     },
+    rightPriceScale: {
+      borderColor: "#111"
+    }
   });
 
   const candleSeries = chart.addCandlestickSeries({
@@ -258,13 +322,19 @@
     borderVisible: false,
   });
 
-  window.addEventListener("resize", () => {
+  function resizeChart() {
     chart.applyOptions({
-      width: chartContainer.clientWidth,
-      height: chartContainer.clientHeight
+      width: chartDiv.clientWidth,
+      height: chartDiv.clientHeight
     });
-  });
+  }
 
+  window.addEventListener("resize", resizeChart);
+  setTimeout(resizeChart, 500); // FIX for GitHub pages load
+
+  // -----------------------------
+  // RSI CALCULATION
+  // -----------------------------
   function calcRSI(prices, period = 14) {
     if (prices.length < period + 1) return 50;
 
@@ -285,7 +355,6 @@
   }
 
   let lastSignal = "";
-
   function sendAlert(type, score, price) {
     if (lastSignal === type) return;
     lastSignal = type;
@@ -295,71 +364,53 @@
 
     const html = `
       <div class="alert-box" style="border-color:${color}; color:${color}">
-        [${new Date().toLocaleTimeString()}] ${type} SIGNAL <br>
-        Price: $${price} <br>
+        [${new Date().toLocaleTimeString()}] ${type} SIGNAL<br>
+        Price: $${price.toFixed(2)}<br>
         RSI: ${score}
       </div>
     `;
-
     output.insertAdjacentHTML("afterbegin", html);
   }
 
+  // -----------------------------
+  // LOAD HISTORY
+  // -----------------------------
   async function loadHistory() {
-    const url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=200";
-    const res = await fetch(url);
-    const data = await res.json();
+    try {
+      const url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=200";
+      const res = await fetch(url);
+      const data = await res.json();
 
-    const candles = data.map(d => ({
-      time: d[0] / 1000,
-      open: parseFloat(d[1]),
-      high: parseFloat(d[2]),
-      low: parseFloat(d[3]),
-      close: parseFloat(d[4]),
-    }));
+      const candles = data.map(d => ({
+        time: d[0] / 1000,
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+      }));
 
-    candleSeries.setData(candles);
+      candleSeries.setData(candles);
+    } catch (err) {
+      console.log("History load failed:", err);
+    }
   }
 
   loadHistory();
 
-  // ------------------------------
+  // -----------------------------
   // DEMO TRADING SYSTEM
-  // ------------------------------
+  // -----------------------------
   let balance = 1000;
   let profitToday = 0;
   let openTrades = [];
+  let lastPrice = 0;
+  let payoutPercent = 80; // company profit system (you keep 20%)
 
   function updateUI() {
     document.getElementById("balance").innerText = `$${balance.toFixed(2)}`;
     document.getElementById("profitToday").innerText = `$${profitToday.toFixed(2)}`;
     document.getElementById("openTrades").innerText = openTrades.length;
-  }
-
-  function placeTrade(type) {
-    const amount = parseFloat(document.getElementById("amount").value);
-    const expiry = parseInt(document.getElementById("expiry").value);
-
-    if (amount <= 0) return alert("Enter valid amount!");
-    if (amount > balance) return alert("Insufficient balance!");
-
-    balance -= amount;
-
-    const trade = {
-      id: Date.now(),
-      type,
-      amount,
-      entryPrice: lastPrice,
-      entryTime: Date.now(),
-      expiryMinutes: expiry,
-      expiryTime: Date.now() + expiry * 60 * 1000,
-      resolved: false
-    };
-
-    openTrades.push(trade);
-
-    addTradeLog(`TRADE OPENED: ${type} | $${amount} | Expiry: ${expiry}m`, "#00ffff");
-
-    updateUI();
+    document.getElementById("payout").innerText = `${payoutPercent}%`;
   }
 
   function addTradeLog(msg, color) {
@@ -370,6 +421,30 @@
       </div>
     `;
     output.insertAdjacentHTML("afterbegin", html);
+  }
+
+  function placeTrade(type) {
+    const amount = parseFloat(document.getElementById("amount").value);
+    const expiry = parseInt(document.getElementById("expiry").value);
+
+    if (amount <= 0) return alert("Enter valid amount!");
+    if (amount > balance) return alert("Insufficient balance!");
+    if (lastPrice === 0) return alert("Price loading, wait...");
+
+    balance -= amount;
+
+    const trade = {
+      id: Date.now(),
+      type,
+      amount,
+      entryPrice: lastPrice,
+      expiryTime: Date.now() + expiry * 60 * 1000,
+      resolved: false
+    };
+
+    openTrades.push(trade);
+    addTradeLog(`TRADE OPENED: ${type} | $${amount} | Entry: $${lastPrice.toFixed(2)}`, "#00ffff");
+    updateUI();
   }
 
   function resolveTrades(currentPrice) {
@@ -384,7 +459,7 @@
         if (trade.type === "PUT" && currentPrice < trade.entryPrice) win = true;
 
         if (win) {
-          const payout = trade.amount * 1.80; // payout system (company profit model)
+          const payout = trade.amount * (1 + payoutPercent / 100);
           balance += payout;
           profitToday += (payout - trade.amount);
 
@@ -400,19 +475,21 @@
     updateUI();
   }
 
-  // ------------------------------
-  // LEADERBOARD (DEMO)
-  // ------------------------------
+  // -----------------------------
+  // TOURNAMENT SYSTEM (DEMO)
+  // -----------------------------
+  let tournamentJoined = false;
+  let tournamentStartTime = null;
+
   let leaderboard = [
-    { name: "Trader_Alpha", profit: 120 },
-    { name: "KingSignal", profit: 90 },
-    { name: "MarketSniper", profit: 55 },
-    { name: "VIP_Pro", profit: 20 }
+    { name: "Trader_Alpha", profit: 220 },
+    { name: "KingSignal", profit: 170 },
+    { name: "MarketSniper", profit: 110 },
+    { name: "VIP_Pro", profit: 50 }
   ];
 
   function updateLeaderboard() {
     leaderboard.sort((a, b) => b.profit - a.profit);
-
     const box = document.getElementById("leaderboard");
     box.innerHTML = "";
 
@@ -423,21 +500,32 @@
 
   updateLeaderboard();
 
-  function addUserToLeaderboard() {
-    const existing = leaderboard.find(x => x.name === "YOU");
-    if (existing) existing.profit = Math.round(profitToday);
+  function joinTournament() {
+    if (tournamentJoined) return alert("You already joined tournament!");
+
+    tournamentJoined = true;
+    tournamentStartTime = Date.now();
+    document.getElementById("tournamentStatus").innerText = "Tournament: Joined ✅";
+
+    addTradeLog("🏆 You joined the tournament! Earn max profit to rank.", "gold");
+  }
+
+  function updateUserLeaderboard() {
+    if (!tournamentJoined) return;
+
+    const you = leaderboard.find(x => x.name === "YOU");
+    if (you) you.profit = Math.round(profitToday);
     else leaderboard.push({ name: "YOU", profit: Math.round(profitToday) });
 
     updateLeaderboard();
   }
 
-  setInterval(addUserToLeaderboard, 5000);
+  setInterval(updateUserLeaderboard, 5000);
 
-  // ------------------------------
-  // REAL BINANCE FEED
-  // ------------------------------
+  // -----------------------------
+  // REAL BINANCE FEED (LIVE)
+  // -----------------------------
   const priceHistory = [];
-  let lastPrice = 0;
 
   const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
 
@@ -484,42 +572,43 @@
     scoreEl.innerText = `RSI Score: ${rsi}`;
     scoreEl.style.color = rsi > 70 ? "#00ff00" : rsi < 30 ? "#ff0000" : "white";
 
-    // timer
     const closeTime = new Date(k.T).toLocaleTimeString();
     document.getElementById("timer").innerText = `Candle Close: ${closeTime}`;
 
-    // alerts
+    // Alerts
     if (rsi >= 80) sendAlert("CALL", rsi, price);
     if (rsi <= 20) sendAlert("PUT", rsi, price);
 
-    // resolve trades
+    // Resolve trades
     resolveTrades(price);
   };
 
   updateUI();
 
-  // ------------------------------
-  // VIP POPUP IDEA
-  // ------------------------------
+  // -----------------------------
+  // VIP POPUP
+  // -----------------------------
   function showVIP() {
     alert(
 `ARCHITECT VIP PLANS:
 
 VIP BASIC: ₹2999 / Month
-- Premium Tournament Access
-- High Accuracy Signals
-- Priority Withdraw Support
+✔ Premium Tournament Access
+✔ VIP Signals
+✔ Faster Support
 
 VIP PRO: ₹5999 / Month
-- Mega Prize Pools
-- Higher Payout %
-- Private Signals + Strategy
-- Dedicated Support
+✔ Mega Prize Tournament
+✔ Higher Payout %
+✔ Premium Strategy Access
+✔ Dedicated Support
 
-(Next Step: Integrate Razorpay/Stripe Payment)`
+NEXT STEP:
+Add Razorpay Payment Gateway + Login System`
     );
   }
+
 </script>
 
 </body>
-</html>
+        </html>
