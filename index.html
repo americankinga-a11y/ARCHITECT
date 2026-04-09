@@ -64,13 +64,14 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      background: rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.97);
       border-top: 1px solid #111;
       padding: 10px;
       display: flex;
       gap: 10px;
       align-items: center;
       justify-content: space-between;
+      z-index: 99;
     }
 
     .trade-bar input, .trade-bar select {
@@ -88,22 +89,28 @@
       flex: 1;
       padding: 14px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .trade-btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
     }
 
     .call-btn {
       background: #00ff00;
       color: #000;
-      box-shadow: 0 0 10px #00ff00;
+      box-shadow: 0 0 12px rgba(0,255,0,0.8);
     }
 
     .put-btn {
       background: #ff0000;
       color: #fff;
-      box-shadow: 0 0 10px #ff0000;
+      box-shadow: 0 0 12px rgba(255,0,0,0.8);
     }
 
     /* Right Panel */
@@ -136,7 +143,7 @@
     }
 
     #output {
-      max-height: 200px;
+      max-height: 250px;
       overflow-y: auto;
       border: 1px solid #222;
       padding: 10px;
@@ -199,14 +206,24 @@
       margin-top: 8px;
     }
 
+    /* Floating expiry countdown like Quotex */
+    .expiry-float {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #111;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: white;
+      z-index: 99;
+    }
+
     /* Mobile Responsive */
     @media(max-width: 900px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .panel {
-        display: none;
-      }
+      .layout { grid-template-columns: 1fr; }
+      .panel { display: none; }
     }
   </style>
 </head>
@@ -222,6 +239,10 @@
 
   <!-- Chart Section -->
   <div id="chart-container">
+
+    <div class="expiry-float" id="expiryFloat">
+      Expiry Countdown: --
+    </div>
 
     <!-- Quotex Style Bottom Bar -->
     <div class="trade-bar">
@@ -245,7 +266,7 @@
       <p class="price-display" id="price">Loading...</p>
       <p id="score-text" class="muted">RSI Score: --</p>
       <p id="connection" class="muted">Status: Connecting...</p>
-      <p class="muted" id="timer">Next Candle Close: --</p>
+      <p class="muted" id="timer">Candle Close: --</p>
     </div>
 
     <div class="box">
@@ -277,20 +298,16 @@
 </div>
 
 <script>
-  // -----------------------------
-  // FIXED CHART RENDER ISSUE
-  // -----------------------------
   const chartContainer = document.getElementById("chart-container");
 
-  // IMPORTANT: create a chart div (because sometimes GitHub Pages has sizing issues)
   const chartDiv = document.createElement("div");
   chartDiv.style.width = "100%";
-  chartDiv.style.height = "100%";
+  chartDiv.style.height = "calc(100% - 70px)";
   chartDiv.style.position = "absolute";
   chartDiv.style.top = "0";
   chartDiv.style.left = "0";
-  chartDiv.style.bottom = "60px"; // space for trade bar
   chartDiv.style.right = "0";
+  chartDiv.style.bottom = "70px";
   chartContainer.appendChild(chartDiv);
 
   const chart = LightweightCharts.createChart(chartDiv, {
@@ -303,6 +320,9 @@
     grid: {
       vertLines: { color: "#111" },
       horzLines: { color: "#111" },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
     },
     timeScale: {
       timeVisible: true,
@@ -330,7 +350,7 @@
   }
 
   window.addEventListener("resize", resizeChart);
-  setTimeout(resizeChart, 500); // FIX for GitHub pages load
+  setTimeout(resizeChart, 500);
 
   // -----------------------------
   // RSI CALCULATION
@@ -377,7 +397,7 @@
   // -----------------------------
   async function loadHistory() {
     try {
-      const url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=200";
+      const url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=300";
       const res = await fetch(url);
       const data = await res.json();
 
@@ -390,6 +410,7 @@
       }));
 
       candleSeries.setData(candles);
+      chart.timeScale().fitContent();
     } catch (err) {
       console.log("History load failed:", err);
     }
@@ -404,7 +425,7 @@
   let profitToday = 0;
   let openTrades = [];
   let lastPrice = 0;
-  let payoutPercent = 80; // company profit system (you keep 20%)
+  let payoutPercent = 80;
 
   function updateUI() {
     document.getElementById("balance").innerText = `$${balance.toFixed(2)}`;
@@ -438,12 +459,26 @@
       type,
       amount,
       entryPrice: lastPrice,
+      entryTime: Date.now(),
       expiryTime: Date.now() + expiry * 60 * 1000,
-      resolved: false
+      resolved: false,
+      entryLine: candleSeries.createPriceLine({
+        price: lastPrice,
+        color: type === "CALL" ? "#00ff00" : "#ff0000",
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Solid,
+        axisLabelVisible: true,
+        title: `${type} ENTRY`,
+      })
     };
 
     openTrades.push(trade);
-    addTradeLog(`TRADE OPENED: ${type} | $${amount} | Entry: $${lastPrice.toFixed(2)}`, "#00ffff");
+
+    addTradeLog(
+      `TRADE OPENED: ${type} | $${amount} | Entry: $${lastPrice.toFixed(2)} | Expiry: ${expiry}m`,
+      "#00ffff"
+    );
+
     updateUI();
   }
 
@@ -457,6 +492,8 @@
         let win = false;
         if (trade.type === "CALL" && currentPrice > trade.entryPrice) win = true;
         if (trade.type === "PUT" && currentPrice < trade.entryPrice) win = true;
+
+        candleSeries.removePriceLine(trade.entryLine);
 
         if (win) {
           const payout = trade.amount * (1 + payoutPercent / 100);
@@ -476,10 +513,36 @@
   }
 
   // -----------------------------
-  // TOURNAMENT SYSTEM (DEMO)
+  // EXPIRY COUNTDOWN FLOATING
+  // -----------------------------
+  function updateExpiryCountdown() {
+    if (openTrades.length === 0) {
+      document.getElementById("expiryFloat").innerText = `Expiry Countdown: --`;
+      return;
+    }
+
+    const soonest = openTrades.reduce((a, b) => a.expiryTime < b.expiryTime ? a : b);
+    const remaining = soonest.expiryTime - Date.now();
+
+    if (remaining <= 0) {
+      document.getElementById("expiryFloat").innerText = `Expiry Countdown: 00:00`;
+      return;
+    }
+
+    const sec = Math.floor(remaining / 1000);
+    const min = Math.floor(sec / 60);
+    const s = sec % 60;
+
+    document.getElementById("expiryFloat").innerText =
+      `Expiry Countdown: ${String(min).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  setInterval(updateExpiryCountdown, 500);
+
+  // -----------------------------
+  // TOURNAMENT SYSTEM
   // -----------------------------
   let tournamentJoined = false;
-  let tournamentStartTime = null;
 
   let leaderboard = [
     { name: "Trader_Alpha", profit: 220 },
@@ -504,7 +567,6 @@
     if (tournamentJoined) return alert("You already joined tournament!");
 
     tournamentJoined = true;
-    tournamentStartTime = Date.now();
     document.getElementById("tournamentStatus").innerText = "Tournament: Joined ✅";
 
     addTradeLog("🏆 You joined the tournament! Earn max profit to rank.", "gold");
@@ -523,66 +585,70 @@
   setInterval(updateUserLeaderboard, 5000);
 
   // -----------------------------
-  // REAL BINANCE FEED (LIVE)
+  // REAL BINANCE FEED + RECONNECT
   // -----------------------------
   const priceHistory = [];
+  let ws;
 
-  const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
+  function connectWS() {
+    ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
 
-  ws.onopen = () => {
-    document.getElementById("connection").innerText = "Status: Connected ✅";
-    document.getElementById("connection").style.color = "#00ff00";
-  };
-
-  ws.onclose = () => {
-    document.getElementById("connection").innerText = "Status: Disconnected ❌";
-    document.getElementById("connection").style.color = "#ff0000";
-  };
-
-  ws.onerror = () => {
-    document.getElementById("connection").innerText = "Status: Error ⚠️";
-    document.getElementById("connection").style.color = "yellow";
-  };
-
-  ws.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    const k = data.k;
-
-    const candle = {
-      time: k.t / 1000,
-      open: parseFloat(k.o),
-      high: parseFloat(k.h),
-      low: parseFloat(k.l),
-      close: parseFloat(k.c),
+    ws.onopen = () => {
+      document.getElementById("connection").innerText = "Status: Connected ✅";
+      document.getElementById("connection").style.color = "#00ff00";
     };
 
-    candleSeries.update(candle);
+    ws.onclose = () => {
+      document.getElementById("connection").innerText = "Status: Reconnecting...";
+      document.getElementById("connection").style.color = "yellow";
+      setTimeout(connectWS, 2000);
+    };
 
-    const price = candle.close;
-    lastPrice = price;
+    ws.onerror = () => {
+      document.getElementById("connection").innerText = "Status: Error ⚠️";
+      document.getElementById("connection").style.color = "yellow";
+    };
 
-    priceHistory.push(price);
-    if (priceHistory.length > 200) priceHistory.shift();
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      const k = data.k;
 
-    const rsi = calcRSI(priceHistory);
+      const candle = {
+        time: k.t / 1000,
+        open: parseFloat(k.o),
+        high: parseFloat(k.h),
+        low: parseFloat(k.l),
+        close: parseFloat(k.c),
+      };
 
-    document.getElementById("price").innerText = `BTCUSDT: $${price.toFixed(2)}`;
+      candleSeries.update(candle);
 
-    const scoreEl = document.getElementById("score-text");
-    scoreEl.innerText = `RSI Score: ${rsi}`;
-    scoreEl.style.color = rsi > 70 ? "#00ff00" : rsi < 30 ? "#ff0000" : "white";
+      const price = candle.close;
+      lastPrice = price;
 
-    const closeTime = new Date(k.T).toLocaleTimeString();
-    document.getElementById("timer").innerText = `Candle Close: ${closeTime}`;
+      priceHistory.push(price);
+      if (priceHistory.length > 300) priceHistory.shift();
 
-    // Alerts
-    if (rsi >= 80) sendAlert("CALL", rsi, price);
-    if (rsi <= 20) sendAlert("PUT", rsi, price);
+      const rsi = calcRSI(priceHistory);
 
-    // Resolve trades
-    resolveTrades(price);
-  };
+      document.getElementById("price").innerText = `BTCUSDT: $${price.toFixed(2)}`;
 
+      const scoreEl = document.getElementById("score-text");
+      scoreEl.innerText = `RSI Score: ${rsi}`;
+      scoreEl.style.color = rsi > 70 ? "#ff0000" : rsi < 30 ? "#00ff00" : "white";
+
+      const closeTime = new Date(k.T).toLocaleTimeString();
+      document.getElementById("timer").innerText = `Candle Close: ${closeTime}`;
+
+      // RSI SIGNAL LOGIC (Correct)
+      if (rsi <= 20) sendAlert("CALL", rsi, price); // oversold -> up
+      if (rsi >= 80) sendAlert("PUT", rsi, price);  // overbought -> down
+
+      resolveTrades(price);
+    };
+  }
+
+  connectWS();
   updateUI();
 
   // -----------------------------
@@ -611,4 +677,5 @@ Add Razorpay Payment Gateway + Login System`
 </script>
 
 </body>
-        </html>
+  </html>
+  
